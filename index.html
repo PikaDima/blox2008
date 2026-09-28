@@ -1,0 +1,4016 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BLOX2008 — Retro 3D Multiplayer Platform & Studio</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js 3D Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- MQTT for Real-Time Global Multiplayer, Admin Actions & Studio Sync -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #c9daf0;
+      background-image: linear-gradient(180deg, #a7c5eb 0%, #d8e5f5 350px);
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      user-select: none;
+      touch-action: pan-y;
+    }
+
+    .retro-btn {
+      background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 48%, #dcdcdc 52%, #e5e5e5 100%);
+      border: 1px solid #7188a4;
+      border-radius: 3px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.18);
+      cursor: pointer;
+      font-weight: 600;
+      transition: filter 0.1s ease;
+    }
+    .retro-btn:hover {
+      background: linear-gradient(to bottom, #fcfdff 0%, #e1ecf8 48%, #c5d9ec 52%, #dbeefc 100%);
+      border-color: #3b76ad;
+    }
+    .retro-btn:active {
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+      background: #c3d5e7;
+    }
+
+    .retro-btn-green {
+      background: linear-gradient(to bottom, #5fe382 0%, #20be4e 48%, #159c3e 52%, #1db849 100%);
+      border: 1px solid #0f6c2c;
+      color: white;
+      text-shadow: 0 -1px 0 rgba(0,0,0,0.5);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 1px 2px rgba(0,0,0,0.25);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .retro-btn-green:hover {
+      filter: brightness(1.08);
+    }
+    .retro-btn-green:active {
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .retro-btn-red {
+      background: linear-gradient(to bottom, #f87171 0%, #ef4444 48%, #b91c1c 52%, #dc2626 100%);
+      border: 1px solid #7f1d1d;
+      color: white;
+      text-shadow: 0 -1px 0 rgba(0,0,0,0.6);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.25);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .retro-btn-red:hover {
+      filter: brightness(1.08);
+    }
+
+    .retro-btn-amber {
+      background: linear-gradient(to bottom, #fcd34d 0%, #f59e0b 48%, #d97706 52%, #b45309 100%);
+      border: 1px solid #78350f;
+      color: #1c1917;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.25);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .nav-tab {
+      background: linear-gradient(to bottom, #2d73be 0%, #175294 100%);
+      border: 1px solid #0e3763;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 7px 16px;
+      cursor: pointer;
+      text-shadow: 0 -1px 0 #072545;
+      position: relative;
+      bottom: -1px;
+    }
+    .nav-tab:hover {
+      background: linear-gradient(to bottom, #448cd9 0%, #2067b4 100%);
+    }
+    .nav-tab.active {
+      background: #ffffff;
+      color: #0b3e75;
+      text-shadow: none;
+      border-color: #8da4be;
+      border-bottom: 1px solid #ffffff;
+      z-index: 2;
+    }
+
+    .retro-box {
+      background-color: #ffffff;
+      border: 1px solid #9bb1cb;
+      border-radius: 3px;
+      box-shadow: 0 1px 3px rgba(0, 30, 70, 0.08);
+    }
+    .retro-box-header {
+      background: linear-gradient(to bottom, #eff5fc 0%, #d5e3f2 100%);
+      border-bottom: 1px solid #b3c7dd;
+      padding: 6px 12px;
+      font-weight: bold;
+      font-size: 13px;
+      color: #143864;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cat-item {
+      padding: 6px 10px;
+      font-size: 12px;
+      display: block;
+      color: #004499;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .cat-item:hover {
+      background-color: #e5edf7;
+      text-decoration: underline;
+    }
+    .cat-item.active {
+      font-weight: bold;
+      color: #000;
+      background-color: #dbe7f5;
+    }
+
+    .modal-backdrop {
+      background-color: rgba(2, 20, 45, 0.75);
+      backdrop-filter: blur(2px);
+    }
+
+    .chat-bubble {
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #0f172a;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      white-space: nowrap;
+      font-weight: 600;
+      animation: popIn 0.15s ease-out;
+    }
+    .chat-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0;
+      border-style: solid;
+      border-color: #1e3a8a transparent;
+      display: block;
+      width: 0;
+    }
+    @keyframes popIn {
+      0% { transform: translate(-50%, -75%) scale(0.6); opacity: 0; }
+      100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+    }
+
+    .joystick-base {
+      width: 110px;
+      height: 110px;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.5) 100%);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50%;
+      position: relative;
+      touch-action: none;
+    }
+    .joystick-thumb {
+      width: 44px;
+      height: 44px;
+      background: radial-gradient(circle, #ffffff 0%, #cbd5e1 100%);
+      border: 2px solid #0f172a;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      touch-action: none;
+    }
+
+    .drop-shadow {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+    }
+
+    .studio-tool-active {
+      background: linear-gradient(to bottom, #dbeafe 0%, #93c5fd 100%) !important;
+      border-color: #1d4ed8 !important;
+      color: #1e3a8a !important;
+      font-weight: 800 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <!-- ==================== BAN SCREEN FULLSCREEN MODAL ==================== -->
+  <div id="screen-banned-lockout" class="fixed inset-0 bg-[#090b10] z-[100] hidden flex-col items-center justify-center p-4">
+    <div class="retro-box w-full max-w-lg border-4 border-red-700 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
+      <div class="bg-gradient-to-r from-red-800 to-red-950 text-white p-3 border-b-2 border-red-900 flex items-center justify-between">
+        <span class="font-black text-sm tracking-wider flex items-center gap-2">
+          <span>⛔</span> ДОСТУП ЗАБЛОКИРОВАН АДМИНИСТРАТОРОМ
+        </span>
+        <span class="bg-black/50 text-[10px] font-mono px-2 py-0.5 rounded text-red-300">BLOX2008 BAN SYSTEM</span>
+      </div>
+      <div class="p-6 text-xs space-y-4 bg-slate-900 text-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-16 h-16 rounded bg-red-950 border border-red-700 flex items-center justify-center text-3xl">
+            🔨
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-red-400">Ваш аккаунт был забанен!</h3>
+            <p class="text-slate-400 text-[11px]">Администратор ограничил ваш доступ к платформе BLOX2008.</p>
+          </div>
+        </div>
+
+        <div class="bg-black/60 p-3 rounded border border-slate-700 space-y-1.5 font-mono text-[11px]">
+          <div><b class="text-slate-400">Игрок:</b> <span id="ban-modal-username" class="text-white font-bold">-</span></div>
+          <div><b class="text-slate-400">Причина:</b> <span id="ban-modal-reason" class="text-red-300">Нарушение правил сервера</span></div>
+          <div><b class="text-slate-400">Срок бана:</b> <span id="ban-modal-duration" class="text-amber-300">Навсегда</span></div>
+          <div><b class="text-slate-400">Выдан администратором:</b> <span id="ban-modal-admin" class="text-blue-300">Cheburekin</span></div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          В период действия блокировки вход во все 3D серверы и Studio заблокирован. Для смены аккаунта нажмите кнопку ниже.
+        </p>
+
+        <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+          <button onclick="logoutBannedAccount()" class="retro-btn px-4 py-2 font-bold text-xs text-slate-800">
+            Сменить аккаунт / Выйти
+          </button>
+          <span class="text-[10px] text-slate-500 font-mono">ID бана: #<span id="ban-modal-id">000000</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Top System Header Bar -->
+    <div class="bg-[#031d3b] text-slate-300 text-[11px] px-3 py-1 flex justify-between items-center border-b border-[#05305c]">
+      <div class="max-w-6xl w-full mx-auto flex justify-between items-center">
+        <span class="flex items-center gap-1.5 font-sans">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <b>BLOX2008</b> — Официальная ретро-платформа с мультиплеером и Studio
+        </span>
+        <div class="flex items-center space-x-3" id="topbar-user-area"></div>
+      </div>
+    </div>
+
+    <!-- Main Blue Header -->
+    <header class="bg-gradient-to-b from-[#0e519c] to-[#042852] text-white shadow-md border-b-2 border-[#031d3d]">
+      <div class="max-w-6xl mx-auto px-4 pt-3 pb-2 flex flex-col md:flex-row items-center justify-between gap-3">
+        
+        <div class="flex items-center space-x-3 cursor-pointer select-none" onclick="switchTab('games')">
+          <div class="flex items-center font-black tracking-tight" style="font-family: 'Arial Black', Impact, sans-serif;">
+            <div class="bg-red-600 text-white px-2.5 py-1 text-2xl md:text-3xl rounded border-2 border-red-800 shadow-inner -rotate-2 transform">
+              R
+            </div>
+            <div class="ml-1.5 text-2xl md:text-3xl tracking-wider text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+              BLOX<span class="text-yellow-400">2008</span>
+            </div>
+          </div>
+          <span class="bg-emerald-600 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded shadow">
+            Online v3.0
+          </span>
+        </div>
+
+        <!-- Currencies, Admin Badge, Network Indicator -->
+        <div class="flex items-center gap-2 sm:gap-3 text-xs bg-black/35 px-3 py-1.5 rounded border border-white/10 shadow-inner flex-wrap">
+          <div class="flex items-center space-x-1" title="R$ Robux">
+            <span class="bg-emerald-600 text-white font-extrabold text-[10px] w-4 h-4 rounded-full flex items-center justify-center border border-emerald-300">
+              R$
+            </span>
+            <span id="header-robux" class="font-bold text-emerald-300 text-sm">20</span>
+          </div>
+
+          <div class="w-px h-4 bg-white/20"></div>
+
+          <div class="flex items-center space-x-1" title="Tickets (TIX)">
+            <span class="bg-amber-500 text-slate-900 font-extrabold text-[10px] px-1 h-4 rounded flex items-center justify-center border border-amber-300">
+              TIX
+            </span>
+            <span id="header-tix" class="font-bold text-amber-300 text-sm">80</span>
+          </div>
+
+          <div class="w-px h-4 bg-white/20"></div>
+
+          <!-- Admin Quick Access Button -->
+          <div id="header-admin-badge" class="hidden">
+            <button onclick="openAdminModal()" class="retro-btn-amber px-2.5 py-0.5 rounded shadow flex items-center gap-1 text-[11px]">
+              <span>👑</span> ПАНЕЛЬ АДМИНА
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-[11px] text-emerald-300 font-bold bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/30">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="header-net-status">Мультиплеер активен</span>
+          </div>
+
+          <div class="w-px h-4 bg-white/20"></div>
+
+          <div id="header-account-btn-container"></div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="max-w-6xl mx-auto px-4 mt-2">
+        <nav class="flex space-x-1 border-b border-[#8da4be] overflow-x-auto">
+          <button id="tab-btn-games" onclick="switchTab('games')" class="nav-tab active whitespace-nowrap">
+            Games (3D Игры)
+          </button>
+          <button id="tab-btn-catalog" onclick="switchTab('catalog')" class="nav-tab whitespace-nowrap">
+            Catalog (Каталог)
+          </button>
+          <button id="tab-btn-studio" onclick="switchTab('studio')" class="nav-tab whitespace-nowrap">
+            Studio (Создать игру)
+          </button>
+          <button id="tab-btn-forum" onclick="switchTab('forum')" class="nav-tab whitespace-nowrap">
+            Forum (Форум)
+          </button>
+          <button id="tab-btn-profile" onclick="switchTab('profile')" class="nav-tab whitespace-nowrap">
+            My Account (Скин и Лицо)
+          </button>
+          <button id="tab-btn-info" onclick="switchTab('info')" class="nav-tab whitespace-nowrap">
+            Info (Справка)
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Sub-navigation Bar -->
+    <div class="bg-[#d5e3f2] border-b border-[#aebfd4] text-xs py-1.5 px-4 shadow-inner">
+      <div class="max-w-6xl mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4 text-[#003366]">
+          <span id="breadcrumb" class="font-semibold">Games &raquo; Список 3D миров</span>
+        </div>
+        <div class="text-[11px] text-slate-700 flex items-center gap-2">
+          <span>Связь: <b class="text-emerald-700 font-bold">EMQX MQTT Relay (Синхронизация игр, каталога и банов)</b></span>
+        </div>
+      </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto px-4 py-4 w-full">
+
+      <!-- 1. GAMES TAB -->
+      <section id="view-games" class="tab-view block">
+        <div class="retro-box p-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs bg-gradient-to-r from-blue-50 to-white">
+          <div class="flex items-center gap-2 flex-wrap flex-1 max-w-xl">
+            <span class="font-bold text-slate-700 whitespace-nowrap">Поиск игр:</span>
+            <input type="text" id="game-search-input" oninput="handleGameSearch(this.value)" placeholder="Поиск по названию или автору..." class="border border-gray-400 rounded px-2.5 py-1 text-xs flex-1">
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="switchTab('studio')" class="retro-btn-green px-3.5 py-1.5 rounded text-xs flex items-center gap-1 shadow">
+              <span class="text-sm font-black">+</span> Создать карту в Studio
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <aside class="col-span-1 space-y-3">
+            <div class="retro-box">
+              <div class="retro-box-header">Локации</div>
+              <div class="p-2 space-y-1">
+                <a onclick="filterServerPlace('all')" id="srv-filter-all" class="cat-item active">Все локации</a>
+                <a onclick="filterServerPlace('Crossroads')" id="srv-filter-cross" class="cat-item">Crossroads (Классика)</a>
+                <a onclick="filterServerPlace('Happy Home')" id="srv-filter-home" class="cat-item">Happy Home (Домик)</a>
+                <a onclick="filterServerPlace('Chaos Canyon')" id="srv-filter-canyon" class="cat-item">Chaos Canyon (Каньон)</a>
+                <a onclick="filterServerPlace('Custom')" id="srv-filter-custom" class="cat-item">Карты игроков (Studio)</a>
+              </div>
+            </div>
+
+            <div class="retro-box p-3 bg-gradient-to-b from-[#fbfdff] to-[#edf4fc] text-xs">
+              <div class="font-bold text-[#0c3668] mb-1">🎮 Управление:</div>
+              <p class="text-[11px] text-slate-700 mb-2 leading-relaxed">
+                • <b>W, A, S, D</b> или <b>Ц, Ф, Ы, В</b> — ходьба<br>
+                • <b>ПРОБЕЛ</b> — прыжок<br>
+                • <b>Зажатие ЛКМ</b> — поворот камеры<br>
+                • <b>Колесо мыши</b> — зум<br>
+                • <b>Клик ЛКМ</b> — взмах мечом (если выдан админом)<br>
+                • <b>ENTER</b> — открыть/отправить чат<br>
+                • На смартфонах доступен сенсорный джойстик и прыжок.
+              </p>
+              <button onclick="startSoloPlay()" class="retro-btn w-full py-1 text-xs font-bold text-blue-900">
+                Одиночный тест (Play Solo)
+              </button>
+            </div>
+          </aside>
+
+          <div class="col-span-1 md:col-span-3">
+            <div id="servers-container" class="space-y-3"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. CATALOG TAB -->
+      <section id="view-catalog" class="tab-view hidden">
+        <div class="retro-box p-3 mb-4 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div>
+            <span class="font-bold text-slate-700 text-sm">Классический каталог 2008 & Мастерская игроков</span>
+            <p class="text-[11px] text-slate-500">Покупайте шляпы и создавайте свои собственные вещи на всеобщее обозрение!</p>
+          </div>
+          <div>
+            <button onclick="openClothingCreatorModal()" class="retro-btn-green px-3 py-1.5 text-xs rounded shadow flex items-center gap-1">
+              <span>👕</span> Создать одежду / шляпу
+            </button>
+          </div>
+        </div>
+
+        <div id="catalog-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+      </section>
+
+      <!-- 3. STUDIO TAB (FULLY FUNCTIONAL BUILDER 2008) -->
+      <section id="view-studio" class="tab-view hidden">
+        <div class="retro-box p-2 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs bg-gradient-to-b from-[#f0f5fb] to-[#d8e7f5]">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-black text-blue-950 text-sm flex items-center gap-1 px-1">
+              <span>🛠️</span> ROBLOX Studio 2008
+            </span>
+
+            <!-- Tool Selection Group -->
+            <div class="flex items-center gap-1 bg-white p-1 border rounded shadow-sm">
+              <button onclick="setStudioTool('select')" id="tool-btn-select" class="retro-btn px-2.5 py-1 text-xs studio-tool-active">
+                👆 Выделить
+              </button>
+              <button onclick="setStudioTool('move')" id="tool-btn-move" class="retro-btn px-2.5 py-1 text-xs">
+                ✋ Двигать мышью
+              </button>
+              <button onclick="setStudioTool('stretch')" id="tool-btn-stretch" class="retro-btn px-2.5 py-1 text-xs">
+                ↔ Растянуть
+              </button>
+              <button onclick="setStudioTool('rotate')" id="tool-btn-rotate" class="retro-btn px-2.5 py-1 text-xs">
+                🔄 Вращать
+              </button>
+              <button onclick="duplicateSelectedStudioPart()" class="retro-btn px-2 py-1 text-xs font-bold text-blue-900" title="Дублировать парт">
+                📑 Клон
+              </button>
+              <button onclick="deleteSelectedStudioPart()" class="retro-btn-red px-2.5 py-1 text-xs rounded">
+                Удалить
+              </button>
+            </div>
+
+            <!-- Insert Part Group -->
+            <div class="flex items-center gap-1 bg-white p-1 border rounded shadow-sm">
+              <span class="text-[11px] font-bold text-slate-600 px-1">+ Парт:</span>
+              <button onclick="insertStudioPart('block')" class="retro-btn px-2 py-1 text-xs">Блок</button>
+              <button onclick="insertStudioPart('cylinder')" class="retro-btn px-2 py-1 text-xs">Цилиндр</button>
+              <button onclick="insertStudioPart('sphere')" class="retro-btn px-2 py-1 text-xs">Сфера</button>
+              <button onclick="insertStudioPart('wedge')" class="retro-btn px-2 py-1 text-xs">Клин</button>
+            </div>
+
+            <!-- Baseplate Lock Toggle -->
+            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1 border rounded text-[11px] shadow-sm">
+              <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+                <input type="checkbox" id="studio-baseplate-lock" checked onchange="toggleStudioBaseplateLock(this.checked)">
+                <span id="studio-baseplate-label">🔒 База заблокирована</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="playSoloStudio()" class="retro-btn-green px-3.5 py-1.5 text-xs rounded font-bold shadow">
+              ▶ Тест (Play Solo)
+            </button>
+            <button onclick="openPublishMapModal()" class="retro-btn px-3 py-1.5 text-xs rounded text-blue-900 font-bold border-blue-400 shadow">
+              ☁ Опубликовать в BLOX2008
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+          <!-- Studio 3D Viewport -->
+          <div class="col-span-1 lg:col-span-3 h-[540px] bg-slate-900 rounded border-2 border-slate-400 relative overflow-hidden select-none" id="studio-canvas-container">
+            <canvas id="studio-viewport" class="w-full h-full block focus:outline-none cursor-crosshair"></canvas>
+            
+            <div class="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] px-2.5 py-1.5 rounded pointer-events-none border border-white/20 backdrop-blur-sm space-y-0.5">
+              <div><b>ЛКМ</b>: Выделение / Перетаскивание партов | <b>ПКМ (зажатие)</b>: Вращение камеры | <b>Колесо</b>: Зум</div>
+              <div class="text-amber-300">Режим: <b id="studio-current-tool-hint">Выделение объектов</b></div>
+            </div>
+
+            <div id="studio-drag-indicator" class="absolute top-2 left-2 bg-amber-500 text-slate-950 font-bold text-[11px] px-2.5 py-1 rounded shadow hidden pointer-events-none">
+              Перемещение парта по сетке...
+            </div>
+          </div>
+
+          <!-- Studio Toolbox & Inspector -->
+          <div class="col-span-1 space-y-3">
+            <div class="retro-box p-3 text-xs">
+              <div class="retro-box-header -mx-3 -mt-3 mb-2">Инспектор парта</div>
+              <div id="studio-inspector-content" class="text-slate-500 text-[11px]">
+                Нажмите на любой парт или Baseplate для редактирования.
+              </div>
+            </div>
+
+            <div class="retro-box p-3 text-xs">
+              <div class="retro-box-header -mx-3 -mt-3 mb-2">Классический Toolbox 2008</div>
+              <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                <button onclick="spawnToolboxItem('tree')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🌲 Классическое дерево</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('tower')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🏰 Сторожевая башня</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('spawn')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🏁 Спавнпоинт (Spawn)</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('jumppad')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🚀 Батут (JumpPad)</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('bridge')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🌉 Подвесной мостик</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('campfire')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🔥 Костер со светом</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('wall')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
+                  <span>🧱 Кирпичная стена</span> <span class="text-slate-400">+</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. FORUM TAB -->
+      <section id="view-forum" class="tab-view hidden">
+        <div class="retro-box p-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs bg-gradient-to-r from-blue-50 to-white">
+          <div>
+            <span class="font-bold text-slate-800 text-sm">Официальный форум BLOX2008</span>
+            <p class="text-[11px] text-slate-500">Общайтесь, находите друзей и делитесь идеями для игр в реальном времени!</p>
+          </div>
+          <button onclick="openNewThreadModal()" class="retro-btn-green px-4 py-1.5 text-xs rounded shadow flex items-center gap-1">
+            <span>✍️</span> Новая тема
+          </button>
+        </div>
+
+        <div id="forum-detail-view" class="hidden retro-box p-4 mb-4"></div>
+
+        <div id="forum-threads-list" class="space-y-2"></div>
+      </section>
+
+      <!-- 5. PROFILE & AVATAR EDITOR TAB -->
+      <section id="view-profile" class="tab-view hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="retro-box p-4 flex flex-col items-center">
+            <div class="retro-box-header w-full -mt-4 -mx-4 mb-4">
+              <span>Вид персонажа R6</span>
+            </div>
+
+            <div class="bg-gradient-to-b from-[#a0c8f0] to-[#e4edf8] p-3 rounded border border-blue-300 w-full flex justify-center items-center min-h-[220px]">
+              <div id="profile-avatar-preview"></div>
+            </div>
+
+            <div class="w-full mt-3 text-xs space-y-2.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Надетый аксессуар:</label>
+                <select id="profile-hat-select" onchange="changeEquippedHat(this.value)" class="w-full border border-gray-300 rounded px-2 py-1 bg-white">
+                  <option value="">(Без шляпы)</option>
+                </select>
+              </div>
+
+              <!-- Custom Face Uploader from PC -->
+              <div class="bg-blue-50 p-2.5 rounded border border-blue-200">
+                <label class="block font-bold text-blue-950 mb-1 text-[11px] flex items-center gap-1">
+                  <span>😊</span> Лицо персонажа (Картинка с ПК):
+                </label>
+                <input type="file" id="profile-face-file-input" accept="image/*" class="hidden" onchange="handleCustomFaceUpload(event)">
+                <div class="flex gap-1.5 mt-1">
+                  <button type="button" onclick="document.getElementById('profile-face-file-input').click()" class="retro-btn px-2.5 py-1 text-[11px] flex-1 font-bold text-slate-800">
+                    📁 Выбрать с ПК
+                  </button>
+                  <button type="button" onclick="resetDefaultFace()" class="retro-btn px-2 py-1 text-[11px] text-red-700 font-semibold" title="Сбросить на классическое лицо">
+                    Сброс
+                  </button>
+                </div>
+                <div id="profile-face-status" class="text-[10px] text-slate-500 mt-1 truncate">Классическое лицо 2008</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="retro-box p-4">
+            <div class="retro-box-header w-full -mt-4 -mx-4 mb-4">
+              <span>Цвета персонажа</span>
+            </div>
+
+            <form onsubmit="saveAvatarColors(event)" class="space-y-2.5 text-xs">
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Голова (Head):</label>
+                <input type="color" id="col-head" value="#f3c742" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Торс (Torso):</label>
+                <input type="color" id="col-torso" value="#0d69ac" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Левая рука (Left Arm):</label>
+                <input type="color" id="col-leftArm" value="#f3c742" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Правая рука (Right Arm):</label>
+                <input type="color" id="col-rightArm" value="#f3c742" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Левая нога (Left Leg):</label>
+                <input type="color" id="col-leftLeg" value="#a1c45a" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+              <div class="flex items-center justify-between">
+                <label class="font-semibold text-slate-700">Правая нога (Right Leg):</label>
+                <input type="color" id="col-rightLeg" value="#a1c45a" class="w-10 h-7 border rounded cursor-pointer p-0">
+              </div>
+
+              <div class="pt-3 border-t border-slate-200 flex gap-2">
+                <button type="submit" class="retro-btn-green w-full py-1.5 rounded font-bold text-xs">
+                  Сохранить цвета
+                </button>
+                <button type="button" onclick="resetDefaultColors()" class="retro-btn px-3 py-1.5 text-xs">
+                  Сброс
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="retro-box p-4 flex flex-col justify-between">
+            <div>
+              <div class="retro-box-header w-full -mt-4 -mx-4 mb-3">
+                <span>Профиль игрока</span>
+              </div>
+              <div class="text-xs space-y-2 mb-3">
+                <div><b>Никнейм:</b> <span id="profile-display-name" class="font-bold text-blue-900">Player</span></div>
+                <div><b>Баланс:</b> <span id="profile-robux-val" class="text-emerald-700 font-bold">20 R$</span> | <span id="profile-tix-val" class="text-amber-700 font-bold">80 TIX</span></div>
+                <div class="text-[11px] text-slate-500">Каждые 24 часа начисляется +25 TIX!</div>
+              </div>
+              <div class="text-xs">
+                <label class="block font-bold text-slate-700 mb-1">Статус (Blurb):</label>
+                <textarea id="profile-blurb-input" rows="3" maxlength="160" class="w-full border border-gray-300 rounded p-2 text-xs focus:outline-none focus:border-blue-500"></textarea>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200">
+              <button onclick="saveBlurb()" class="retro-btn w-full py-1.5 text-xs font-bold text-slate-800">
+                Обновить статус
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. INFO TAB -->
+      <section id="view-info" class="tab-view hidden">
+        <div class="retro-box p-5 text-xs space-y-5">
+          <div class="retro-box-header -mx-5 -mt-5 mb-4">
+            <span>Информация о платформе и руководство</span>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 p-4 rounded-md">
+            <h3 class="font-bold text-blue-900 text-sm mb-1.5 flex items-center gap-1.5">
+              <span>🏛️</span> О платформе BLOX2008
+            </h3>
+            <p class="text-slate-700 leading-relaxed text-[12px]">
+              BLOX2008 — полноценная веб-реконструкция золотого века Roblox 2008 года. Здесь воссозданы аутентичные текстуры стадов, R6 аватары с настраиваемыми цветами и возможностью натянуть своё лицо, классический инвентарь с Linked Sword, интерактивный редактор Studio 2008 с перетаскиванием партов мышью, живой мультиплеер без задержек и полнофункциональная система модерации для администраторов.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-50 border border-slate-300 p-3.5 rounded-md">
+              <h4 class="font-bold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
+                <span>💻</span> Управление на компьютере:
+              </h4>
+              <ul class="space-y-1.5 text-slate-700 text-[11px] leading-relaxed">
+                <li>• <b>W, A, S, D</b> или <b>Ц, Ф, Ы, В</b> — перемещение персонажа.</li>
+                <li>• <b>ПРОБЕЛ (Space)</b> — прыжок (или подъём в режиме полёта).</li>
+                <li>• <b>Зажатие ЛКМ в 3D мире</b> — круговой обзор камеры на 360 градусов.</li>
+                <li>• <b>Колесо мыши</b> — приближение и отдаление камеры.</li>
+                <li>• <b>Клик ЛКМ</b> — взмах мечом (если меч выдан администратором).</li>
+                <li>• <b>Enter</b> — открыть строку ввода чата или отправить реплику.</li>
+              </ul>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-300 p-3.5 rounded-md">
+              <h4 class="font-bold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
+                <span>📱</span> Управление на телефоне:
+              </h4>
+              <ul class="space-y-1.5 text-slate-700 text-[11px] leading-relaxed">
+                <li>• <b>Сенсорный джойстик слева</b> — плавный бег в любом направлении.</li>
+                <li>• <b>Кнопка «ПРЫЖОК» справа</b> — высокий прыжок.</li>
+                <li>• <b>Проведение пальцем по экрану</b> — вращение камеры.</li>
+                <li>• <b>Кнопка «💬 ЧАТ»</b> — отправка сообщений с облачками над головой.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="bg-[#cddbee] border-t border-[#a0b5cb] text-slate-600 text-xs py-3 px-4 mt-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 text-center md:text-left">
+      <div>
+        <div class="font-bold text-slate-700">BLOX2008 &copy; 2008 - 2026</div>
+        <div class="text-[11px] text-slate-500">Автономная сетевая ретро-песочница. Поддержка PC и Touch.</div>
+      </div>
+      <div class="flex space-x-3 text-[11px] text-[#004499]">
+        <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('games')">Игры</a>
+        <span>|</span>
+        <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('catalog')">Каталог</a>
+        <span>|</span>
+        <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('studio')">Studio</a>
+        <span>|</span>
+        <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('forum')">Форум</a>
+        <span>|</span>
+        <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('profile')">Скин</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 3D IN-GAME FULLSCREEN VIEWPORT ==================== -->
+  <div id="screen-3d-game" class="fixed inset-0 bg-[#05111e] hidden z-40 flex flex-col select-none">
+    
+    <!-- Top Client Bar -->
+    <div class="bg-gradient-to-r from-[#0d3b6c] to-[#041a33] text-white px-3 py-1.5 flex items-center justify-between text-xs border-b border-[#1b518c]">
+      <div class="flex items-center space-x-2">
+        <div class="w-4 h-4 bg-red-600 rounded-sm flex items-center justify-center font-black text-[10px]">R</div>
+        <span id="game-titlebar" class="font-bold tracking-wide truncate max-w-[140px] sm:max-w-none">ROBLOX 3D</span>
+        <span class="text-slate-400">|</span>
+        <span id="game-map-name" class="text-yellow-300">Crossroads</span>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <div id="ingame-admin-quick-btn" class="hidden">
+          <button onclick="openAdminModal()" class="retro-btn-amber text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded shadow">
+            👑 Админка
+          </button>
+        </div>
+
+        <!-- HP Bar HUD -->
+        <div class="flex items-center gap-1.5 bg-black/50 px-2 py-0.5 rounded border border-white/20">
+          <span class="text-[10px] font-bold text-red-400">HP:</span>
+          <div class="w-16 h-2.5 bg-red-950 rounded overflow-hidden border border-red-800">
+            <div id="ingame-hp-bar" class="bg-emerald-500 h-full w-full transition-all duration-150"></div>
+          </div>
+          <span id="ingame-hp-text" class="text-[10px] font-mono text-emerald-300 font-bold">100</span>
+        </div>
+
+        <div class="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded border border-white/10 text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="hidden sm:inline">Игроков:</span> <b id="game-player-count" class="text-emerald-300">1</b>
+        </div>
+        <button onclick="exit3DGame()" class="retro-btn-red px-2.5 py-0.5 rounded font-bold text-[11px] whitespace-nowrap">
+          Выход
+        </button>
+      </div>
+    </div>
+
+    <!-- 3D Canvas Viewport -->
+    <div class="relative flex-1 w-full h-full overflow-hidden bg-sky-400" id="canvas-container">
+      <canvas id="three-viewport" tabindex="0" class="w-full h-full block focus:outline-none"></canvas>
+
+      <!-- Overhead 3D Speech Bubbles Container -->
+      <div id="chat-bubbles-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+      <!-- In-Game Chat Box -->
+      <div id="desktop-chat-wrapper" class="absolute top-3 left-3 w-80 max-w-[75vw] pointer-events-auto flex flex-col gap-1 z-10">
+        <div id="ingame-chat-log" class="bg-black/75 text-white rounded p-2 text-xs h-32 overflow-y-auto space-y-1 font-sans border border-white/20 shadow-lg backdrop-blur-sm">
+          <div class="text-emerald-300 font-semibold">[BLOX2008]: Добро пожаловать на сервер! Нажмите ENTER для ввода сообщения.</div>
+        </div>
+
+        <div class="flex gap-1">
+          <input type="text" id="ingame-chat-input" maxlength="90" placeholder="Нажмите Enter для отправки..." class="flex-1 bg-black/85 text-white border border-white/40 rounded px-2.5 py-1 text-xs focus:outline-none focus:border-yellow-400 shadow">
+          <button onclick="sendChatMessage()" class="retro-btn px-3 py-1 text-xs font-bold text-slate-800">
+            Чат
+          </button>
+        </div>
+      </div>
+
+      <!-- Hotbar Inventory (Initially Empty by default) -->
+      <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 pointer-events-auto flex gap-2 z-10" id="hotbar-inventory-container">
+        <div id="hotbar-slot-1" onclick="selectHotbarSlot(1)" class="w-14 h-14 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 opacity-40 rounded flex flex-col items-center justify-center cursor-pointer shadow-lg active:scale-95 transition-transform text-white">
+          <span class="text-lg">🗡️</span>
+          <span class="text-[9px] font-bold">Пусто [1]</span>
+        </div>
+      </div>
+
+      <!-- Mobile Touch Controls -->
+      <div id="mobile-controls-overlay" class="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4 hidden">
+        <div class="flex justify-end pointer-events-auto">
+          <button onclick="openMobileChatPrompt()" class="bg-black/60 text-white px-3.5 py-2 rounded-full border border-white/30 text-xs font-bold shadow-lg flex items-center gap-1.5 backdrop-blur-sm">
+            💬 Написать в чат
+          </button>
+        </div>
+
+        <div class="flex justify-between items-end w-full pb-2">
+          <div id="mobile-joystick-zone" class="pointer-events-auto">
+            <div id="joystick-base" class="joystick-base shadow-2xl">
+              <div id="joystick-thumb" class="joystick-thumb"></div>
+            </div>
+          </div>
+
+          <div class="pointer-events-auto flex flex-col items-center gap-2">
+            <button onclick="performPlayerAttack()" class="w-14 h-14 bg-amber-600 text-white font-black text-xs rounded-full border-2 border-amber-300 shadow-xl flex items-center justify-center active:scale-90">
+              🗡️ УДАР
+            </button>
+            <button id="mobile-jump-btn" class="w-16 h-16 bg-emerald-600 text-white font-black text-xs rounded-full border-2 border-emerald-300 shadow-xl flex items-center justify-center active:scale-90">
+              ПРЫЖОК
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH / ACCOUNT LOGIN & REGISTER MODAL -->
+  <div id="modal-auth" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-sm shadow-2xl">
+      <div class="retro-box-header">
+        <span id="auth-modal-title">Вход в аккаунт</span>
+        <button onclick="closeAuthModal()" class="text-slate-500 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <div class="p-4 text-xs">
+        <div class="flex border-b border-gray-300 mb-3">
+          <button onclick="setAuthMode('login')" id="auth-tab-login" class="flex-1 py-1 font-bold text-blue-900 border-b-2 border-blue-600">Вход</button>
+          <button onclick="setAuthMode('register')" id="auth-tab-register" class="flex-1 py-1 font-bold text-slate-500">Регистрация</button>
+        </div>
+
+        <form onsubmit="handleAuthSubmit(event)" class="space-y-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Никнейм игрока:</label>
+            <input type="text" id="auth-input-username" name="username" autocomplete="username" required maxlength="16" placeholder="Robloxian2008" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Пароль:</label>
+            <input type="password" id="auth-input-password" name="password" autocomplete="current-password" required minlength="4" placeholder="••••••••" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs">
+          </div>
+          <div class="text-[11px] text-slate-500" id="auth-hint-text">
+            Для аккаунта Cheburekin используйте пароль администратора: 27102014Ddima
+          </div>
+          <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+            <button type="button" onclick="closeAuthModal()" class="retro-btn px-4 py-1.5">Отмена</button>
+            <button type="submit" id="auth-submit-btn" class="retro-btn-green px-5 py-1.5 rounded font-bold">Войти</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOTHING & ACCESSORY CREATOR MODAL -->
+  <div id="modal-clothing-creator" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-md shadow-2xl">
+      <div class="retro-box-header">
+        <span>Создать вещь в Каталог</span>
+        <button onclick="closeClothingCreatorModal()" class="text-slate-500 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <form onsubmit="handleCreateClothingSubmit(event)" class="p-4 text-xs space-y-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Тип предмета:</label>
+          <select id="clothing-type" class="w-full border border-gray-300 rounded px-2 py-1.5 bg-white">
+            <option value="hat">Шляпа / Аксессуар (3D модель)</option>
+            <option value="shirt">Рубашка (Цвет торса)</option>
+            <option value="pants">Штаны (Цвет ног)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Название предмета:</label>
+          <input type="text" id="clothing-name" required maxlength="30" placeholder="Classic Blue Fedora" class="w-full border border-gray-300 rounded px-2.5 py-1 text-xs">
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <label class="block font-bold text-slate-700 mb-1">Основной цвет:</label>
+            <input type="color" id="clothing-color" value="#2563eb" class="w-full h-8 border rounded cursor-pointer p-0">
+          </div>
+          <div class="flex-1">
+            <label class="block font-bold text-slate-700 mb-1">Валюта:</label>
+            <select id="clothing-currency" class="w-full border border-gray-300 rounded px-2 py-1 bg-white">
+              <option value="tix">TIX (Билеты)</option>
+              <option value="robux">Robux (R$)</option>
+            </select>
+          </div>
+          <div class="w-24">
+            <label class="block font-bold text-slate-700 mb-1">Цена:</label>
+            <input type="number" id="clothing-price" min="0" max="999" value="15" class="w-full border border-gray-300 rounded px-2 py-1">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Описание:</label>
+          <textarea id="clothing-desc" rows="2" maxlength="120" placeholder="Стильный ретро-аксессуар..." class="w-full border border-gray-300 rounded p-2 text-xs"></textarea>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 p-2 rounded text-[11px] text-blue-900">
+          После создания вещь моментально появится у всех пользователей в общем Каталоге!
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+          <button type="button" onclick="closeClothingCreatorModal()" class="retro-btn px-4 py-1.5">Отмена</button>
+          <button type="submit" class="retro-btn-green px-5 py-1.5 rounded font-bold">Опубликовать в Каталог</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NEW FORUM THREAD MODAL -->
+  <div id="modal-new-thread" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-md shadow-2xl">
+      <div class="retro-box-header">
+        <span>Создать тему на форуме</span>
+        <button onclick="closeNewThreadModal()" class="text-slate-500 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <form onsubmit="handleCreateThreadSubmit(event)" class="p-4 text-xs space-y-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Категория:</label>
+          <select id="thread-input-cat" class="w-full border border-gray-300 rounded px-2 py-1.5 bg-white">
+            <option value="Общее">Общее обсуждение</option>
+            <option value="Studio">Studio & Разработка карт</option>
+            <option value="Игроки">Поиск напарников (LFG)</option>
+            <option value="Другое">✨ Другое</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Заголовок:</label>
+          <input type="text" id="thread-input-title" required maxlength="60" placeholder="Как вам моя новая карта?" class="w-full border border-gray-300 rounded px-2.5 py-1">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Сообщение:</label>
+          <textarea id="thread-input-content" required rows="4" maxlength="500" placeholder="Текст вашего сообщения..." class="w-full border border-gray-300 rounded p-2 text-xs"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+          <button type="button" onclick="closeNewThreadModal()" class="retro-btn px-4 py-1.5">Отмена</button>
+          <button type="submit" class="retro-btn-green px-5 py-1.5 rounded font-bold">Опубликовать для всех</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PUBLISH STUDIO MAP MODAL -->
+  <div id="modal-publish-map" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-md shadow-2xl">
+      <div class="retro-box-header">
+        <span>Опубликовать карту в BLOX2008</span>
+        <button onclick="closePublishMapModal()" class="text-slate-500 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <form onsubmit="handlePublishMapSubmit(event)" class="p-4 text-xs space-y-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Название плейса:</label>
+          <input type="text" id="pub-map-name" required maxlength="35" placeholder="Мой крутой обби 2008" class="w-full border border-gray-300 rounded px-2.5 py-1 text-xs">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Описание:</label>
+          <textarea id="pub-map-desc" rows="2" maxlength="150" placeholder="Проходите испытания вместе с друзьями!" class="w-full border border-gray-300 rounded p-2 text-xs"></textarea>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded text-[11px] text-emerald-900 leading-relaxed">
+          ⚡ <b>Глобальный доступ:</b> Ваша карта появится у всех пользователей в списке игр, и любой сможет зайти в неё в 3D!
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+          <button type="button" onclick="closePublishMapModal()" class="retro-btn px-4 py-1.5">Отмена</button>
+          <button type="submit" class="retro-btn-green px-5 py-1.5 rounded font-bold">Опубликовать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN COMMANDS & MODERATION MODAL -->
+  <div id="modal-admin-panel" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-lg shadow-2xl border-2 border-amber-400">
+      <div class="retro-box-header bg-gradient-to-r from-amber-200 to-amber-100 text-amber-950">
+        <span class="flex items-center gap-1.5 font-black text-sm">👑 Панель Администратора BLOX2008</span>
+        <button onclick="closeAdminModal()" class="text-slate-600 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <div class="p-4 text-xs space-y-4 max-h-[85vh] overflow-y-auto">
+
+        <!-- Cheats & Abilities -->
+        <div>
+          <div class="font-bold text-slate-800 mb-1.5 border-b pb-1">⚡ Способности в 3D игре:</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="toggleAdminGodMode()" id="admin-btn-god" class="retro-btn py-2 font-bold flex items-center justify-center gap-1">
+              🛡️ Режим Бога: ВЫКЛ
+            </button>
+            <button onclick="toggleAdminFlyMode()" id="admin-btn-fly" class="retro-btn py-2 font-bold flex items-center justify-center gap-1">
+              🕊️ Режим Полёта: ВЫКЛ
+            </button>
+            <button onclick="toggleAdminSpeed()" id="admin-btn-speed" class="retro-btn py-2 font-bold flex items-center justify-center gap-1">
+              ⚡ Супер-скорость: ВЫКЛ
+            </button>
+            <button onclick="giveAdminSword()" class="retro-btn-green py-2 font-bold flex items-center justify-center gap-1">
+              🗡️ Выдать Classic Sword
+            </button>
+          </div>
+        </div>
+
+        <!-- Ban Management System -->
+        <div class="border-t border-slate-200 pt-3">
+          <div class="font-bold text-red-800 mb-1.5 flex items-center gap-1">
+            <span>🔨</span> Модерация: Забанить игрока
+          </div>
+          <div class="bg-red-50 p-2.5 rounded border border-red-200 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 text-[10px] mb-0.5">Никнейм нарушителя:</label>
+                <input type="text" id="admin-ban-nick" placeholder="Player2008" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 text-[10px] mb-0.5">Срок бана:</label>
+                <select id="admin-ban-duration" class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
+                  <option value="30m">30 минут</option>
+                  <option value="2h">2 часа</option>
+                  <option value="1d">1 день</option>
+                  <option value="perm">Навсегда</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 text-[10px] mb-0.5">Причина бана:</label>
+              <input type="text" id="admin-ban-reason" placeholder="Оскорбления / Неадекватное поведение" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+            </div>
+            <div class="flex justify-end pt-1">
+              <button onclick="executeAdminBan()" class="retro-btn-red px-4 py-1 text-xs rounded font-bold flex items-center gap-1">
+                <span>⛔</span> Выдать бан нарушителю
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Bans List -->
+          <div class="mt-2.5">
+            <div class="font-bold text-slate-700 text-[11px] mb-1">Список активных банов:</div>
+            <div id="admin-bans-list" class="max-h-28 overflow-y-auto space-y-1 pr-1 bg-white p-2 rounded border border-slate-300 text-[11px]">
+              <div class="text-slate-400 text-center py-1">Нет забаненных игроков</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grant Admin Rights -->
+        <div class="border-t border-slate-200 pt-3 space-y-2">
+          <label class="block font-bold text-slate-700">Назначить другого игрока админом:</label>
+          <div class="flex gap-1.5">
+            <input type="text" id="admin-grant-nick" placeholder="Никнейм игрока..." class="flex-1 border border-gray-300 rounded px-2 py-1">
+            <button onclick="handleGrantAdminClick()" class="retro-btn px-3 py-1 font-bold">Назначить</button>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 p-2.5 rounded border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+          Администраторы видят красные кнопки <b>[Удалить]</b> возле <b>всех игр</b>, <b>вещей каталога</b> и <b>тем на форуме</b>. При удалении объект моментально стирается у всех пользователей сети.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="retro-toast" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs px-4 py-2.5 rounded shadow-xl border border-slate-700 hidden opacity-0 transition-opacity duration-200 z-50">
+    <span id="toast-text">Уведомление</span>
+  </div>
+
+  <script>
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playRetroOofSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } catch (e) {}
+    }
+
+    function playRetroJumpSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(420, now + 0.12);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } catch (e) {}
+    }
+
+    function playSwordSlashSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(700, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.14);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      } catch (e) {}
+    }
+
+    function playChatBlipSound() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, now);
+        osc.frequency.setValueAtTime(880, now + 0.05);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } catch (e) {}
+    }
+
+    const STORAGE_KEY_ACCOUNTS = 'blox2008_accounts_db_v5';
+    const STORAGE_KEY_CURRENT_USER = 'blox2008_current_user_v5';
+    const STORAGE_KEY_CUSTOM_SERVERS = 'blox2008_custom_servers_v5';
+    const STORAGE_KEY_FORUM = 'blox2008_forum_v5';
+    const STORAGE_KEY_CUSTOM_CLOTHING = 'blox2008_custom_clothing_v5';
+    const STORAGE_KEY_ADMINS = 'blox2008_admins_list_v5';
+    const STORAGE_KEY_BANS = 'blox2008_active_bans_v5';
+
+    let currentAccount = null;
+    let registeredAccounts = {};
+    let adminAccountsList = ['Cheburekin'];
+    let activeBansList = [];
+    let customClothingItems = [];
+    let forumThreads = [];
+    let publishedServers = [];
+
+    let currentViewingThread = null;
+    let authMode = 'login';
+
+    let adminGodMode = false;
+    let adminFlyMode = false;
+    let adminSuperSpeed = false;
+
+    function loadAdminList() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ADMINS);
+        adminAccountsList = raw ? JSON.parse(raw) : ['Cheburekin'];
+      } catch (e) {
+        adminAccountsList = ['Cheburekin'];
+      }
+      if (!adminAccountsList.includes('Cheburekin')) {
+        adminAccountsList.push('Cheburekin');
+      }
+    }
+
+    function saveAdminList() {
+      try {
+        localStorage.setItem(STORAGE_KEY_ADMINS, JSON.stringify(adminAccountsList));
+      } catch (e) {}
+    }
+
+    function isCurrentAccountAdmin() {
+      if (!currentAccount) return false;
+      return adminAccountsList.includes(currentAccount.username);
+    }
+
+    function loadBansList() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_BANS);
+        activeBansList = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        activeBansList = [];
+      }
+      const now = Date.now();
+      activeBansList = activeBansList.filter(b => b.expiresAt === 'perm' || b.expiresAt > now);
+      saveBansList();
+    }
+
+    function saveBansList() {
+      try {
+        localStorage.setItem(STORAGE_KEY_BANS, JSON.stringify(activeBansList));
+      } catch (e) {}
+    }
+
+    function checkActiveBanForUser(username) {
+      if (!username) return null;
+      loadBansList();
+      const now = Date.now();
+      const ban = activeBansList.find(b => b.username.toLowerCase() === username.toLowerCase());
+      if (!ban) return null;
+      if (ban.expiresAt !== 'perm' && ban.expiresAt <= now) {
+        activeBansList = activeBansList.filter(b => b !== ban);
+        saveBansList();
+        return null;
+      }
+      return ban;
+    }
+
+    function verifyCurrentAccountBanState() {
+      if (!currentAccount) return;
+      const ban = checkActiveBanForUser(currentAccount.username);
+      const banScreen = document.getElementById('screen-banned-lockout');
+      if (ban) {
+        document.getElementById('ban-modal-username').textContent = ban.username;
+        document.getElementById('ban-modal-reason').textContent = ban.reason || 'Нарушение правил';
+        document.getElementById('ban-modal-duration').textContent = ban.expiresAt === 'perm' ? 'Навсегда' : new Date(ban.expiresAt).toLocaleString();
+        document.getElementById('ban-modal-admin').textContent = ban.bannedBy || 'Администратор';
+        document.getElementById('ban-modal-id').textContent = ban.id || '98231';
+        banScreen?.classList.remove('hidden');
+        banScreen?.classList.add('flex');
+
+        if (!document.getElementById('screen-3d-game').classList.contains('hidden')) {
+          exit3DGame();
+        }
+      } else {
+        banScreen?.classList.add('hidden');
+        banScreen?.classList.remove('flex');
+      }
+    }
+
+    function logoutBannedAccount() {
+      document.getElementById('screen-banned-lockout')?.classList.add('hidden');
+      document.getElementById('screen-banned-lockout')?.classList.remove('flex');
+      openAuthModal();
+    }
+
+    function updateAdminUIElements() {
+      const isAdmin = isCurrentAccountAdmin();
+      const badge = document.getElementById('header-admin-badge');
+      const inGameQuickBtn = document.getElementById('ingame-admin-quick-btn');
+      if (badge) badge.classList.toggle('hidden', !isAdmin);
+      if (inGameQuickBtn) inGameQuickBtn.classList.toggle('hidden', !isAdmin);
+    }
+
+    function openAdminModal() {
+      if (!isCurrentAccountAdmin()) {
+        showToast('Доступ запрещен: требуется статус Администратора!');
+        return;
+      }
+      renderAdminBansList();
+      document.getElementById('modal-admin-panel').classList.remove('hidden');
+      document.getElementById('modal-admin-panel').classList.add('flex');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('modal-admin-panel').classList.add('hidden');
+      document.getElementById('modal-admin-panel').classList.remove('flex');
+    }
+
+    function renderAdminBansList() {
+      const container = document.getElementById('admin-bans-list');
+      if (!container) return;
+      loadBansList();
+
+      if (activeBansList.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 text-center py-1">Нет забаненных игроков</div>`;
+        return;
+      }
+
+      container.innerHTML = activeBansList.map(b => {
+        const timeStr = b.expiresAt === 'perm' ? 'Навсегда' : new Date(b.expiresAt).toLocaleDateString();
+        return `
+          <div class="flex items-center justify-between p-1.5 bg-slate-50 border rounded text-[11px]">
+            <div>
+              <b class="text-red-700">${escapeHtml(b.username)}</b>
+              <span class="text-slate-500"> — ${escapeHtml(b.reason)} (${timeStr})</span>
+            </div>
+            <button onclick="unbanPlayer('${b.username}')" class="retro-btn px-2 py-0.5 text-[10px] font-bold text-blue-900">
+              Разбанить
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function executeAdminBan() {
+      if (!isCurrentAccountAdmin()) return;
+      const nickInp = document.getElementById('admin-ban-nick');
+      const reasonInp = document.getElementById('admin-ban-reason');
+      const durationSelect = document.getElementById('admin-ban-duration');
+
+      const targetNick = nickInp ? nickInp.value.trim() : '';
+      const reason = reasonInp ? reasonInp.value.trim() : 'Нарушение правил';
+      const dur = durationSelect ? durationSelect.value : '30m';
+
+      if (!targetNick) {
+        showToast('Введите никнейм игрока!');
+        return;
+      }
+
+      if (targetNick === 'Cheburekin') {
+        showToast('Нельзя забанить главного администратора Cheburekin!');
+        return;
+      }
+
+      let expiresAt = 'perm';
+      const now = Date.now();
+      if (dur === '30m') expiresAt = now + 30 * 60 * 1000;
+      else if (dur === '2h') expiresAt = now + 2 * 60 * 60 * 1000;
+      else if (dur === '1d') expiresAt = now + 24 * 60 * 60 * 1000;
+
+      const newBan = {
+        id: Math.floor(100000 + Math.random() * 900000).toString(),
+        username: targetNick,
+        reason: reason,
+        expiresAt: expiresAt,
+        bannedBy: currentAccount.username,
+        timestamp: now
+      };
+
+      activeBansList = activeBansList.filter(b => b.username.toLowerCase() !== targetNick.toLowerCase());
+      activeBansList.push(newBan);
+      saveBansList();
+
+      broadcastGlobalNetworkEvent('blox2008/admin/bans', {
+        type: 'player_banned',
+        ban: newBan
+      });
+
+      showToast(`Игрок ${targetNick} успешно забанен!`);
+      nickInp.value = '';
+      reasonInp.value = '';
+      renderAdminBansList();
+
+      if (currentAccount && currentAccount.username.toLowerCase() === targetNick.toLowerCase()) {
+        verifyCurrentAccountBanState();
+      }
+    }
+
+    function unbanPlayer(username) {
+      if (!isCurrentAccountAdmin()) return;
+      activeBansList = activeBansList.filter(b => b.username.toLowerCase() !== username.toLowerCase());
+      saveBansList();
+
+      broadcastGlobalNetworkEvent('blox2008/admin/bans', {
+        type: 'player_unbanned',
+        username: username
+      });
+
+      showToast(`Игрок ${username} разбанен!`);
+      renderAdminBansList();
+    }
+
+    function toggleAdminGodMode() {
+      adminGodMode = !adminGodMode;
+      if (adminGodMode) playerHealth = 100;
+      updateHPBarHUD();
+      document.getElementById('admin-btn-god').textContent = `🛡️ Режим Бога: ${adminGodMode ? 'ВКЛ' : 'ВЫКЛ'}`;
+      showToast(adminGodMode ? 'Режим Бога активирован!' : 'Режим Бога выключен');
+    }
+
+    function toggleAdminFlyMode() {
+      adminFlyMode = !adminFlyMode;
+      document.getElementById('admin-btn-fly').textContent = `🕊️ Режим Полёта: ${adminFlyMode ? 'ВКЛ' : 'ВЫКЛ'}`;
+      showToast(adminFlyMode ? 'Полёт активирован! Нажмите ПРОБЕЛ для набора высоты' : 'Полёт выключен');
+    }
+
+    function toggleAdminSpeed() {
+      adminSuperSpeed = !adminSuperSpeed;
+      document.getElementById('admin-btn-speed').textContent = `⚡ Супер-скорость: ${adminSuperSpeed ? 'ВКЛ' : 'ВЫКЛ'}`;
+      showToast(adminSuperSpeed ? 'Скорость x3 активирована!' : 'Обычная скорость');
+    }
+
+    function giveAdminSword() {
+      hasEquippedSword = true;
+      if (swordMeshInstance) swordMeshInstance.visible = true;
+      const slotEl = document.getElementById('hotbar-slot-1');
+      if (slotEl) {
+        slotEl.classList.remove('opacity-40');
+        slotEl.classList.add('border-yellow-400');
+        slotEl.innerHTML = `<span class="text-lg">🗡️</span><span class="text-[9px] font-bold">Меч [1]</span>`;
+      }
+      showToast('Classic Sword выдан в руки!');
+    }
+
+    function handleGrantAdminClick() {
+      const inp = document.getElementById('admin-grant-nick');
+      const target = inp ? inp.value.trim() : '';
+      if (!target) return;
+      if (!adminAccountsList.includes(target)) {
+        adminAccountsList.push(target);
+        saveAdminList();
+        showToast(`Игрок ${target} теперь Администратор!`);
+      } else {
+        showToast(`Игрок ${target} уже является администратором`);
+      }
+      inp.value = '';
+    }
+
+    function adminDeleteGameServer(roomId, event) {
+      if (event) event.stopPropagation();
+      if (!isCurrentAccountAdmin()) {
+        showToast('Только администраторы могут удалять игры!');
+        return;
+      }
+      publishedServers = publishedServers.filter(s => s.roomId !== roomId);
+      saveCustomServers();
+      renderServerList();
+
+      broadcastGlobalNetworkEvent('blox2008/games/global', {
+        type: 'server_deleted',
+        roomId: roomId
+      });
+      showToast('Игра удалена администратором для всех!');
+    }
+
+    function adminDeleteCatalogItem(itemId, event) {
+      if (event) event.stopPropagation();
+      if (!isCurrentAccountAdmin()) {
+        showToast('Только администраторы могут удалять вещи!');
+        return;
+      }
+      customClothingItems = customClothingItems.filter(i => i.id !== itemId);
+      saveCustomClothing();
+      renderCatalog();
+
+      broadcastGlobalNetworkEvent('blox2008/catalog/global', {
+        type: 'catalog_item_deleted',
+        itemId: itemId
+      });
+      showToast('Предмет удален из каталога администратором!');
+    }
+
+    function adminDeleteForumThread(threadId, event) {
+      if (event) event.stopPropagation();
+      if (!isCurrentAccountAdmin()) {
+        showToast('Только администраторы могут удалять темы!');
+        return;
+      }
+      forumThreads = forumThreads.filter(t => t.id !== threadId);
+      saveForumPosts();
+      if (currentViewingThread && currentViewingThread.id === threadId) {
+        closeThreadDetail();
+      }
+      renderForumThreads();
+
+      broadcastGlobalNetworkEvent('blox2008/forum/global', {
+        type: 'forum_thread_deleted',
+        threadId: threadId
+      });
+      showToast('Тема форума удалена администратором!');
+    }
+
+    function loadCustomClothing() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_CLOTHING);
+        customClothingItems = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        customClothingItems = [];
+      }
+    }
+
+    function saveCustomClothing() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CUSTOM_CLOTHING, JSON.stringify(customClothingItems));
+      } catch (e) {}
+    }
+
+    function openClothingCreatorModal() {
+      const modal = document.getElementById('modal-clothing-creator');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeClothingCreatorModal() {
+      const modal = document.getElementById('modal-clothing-creator');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function handleCreateClothingSubmit(e) {
+      if (e) e.preventDefault();
+      const type = document.getElementById('clothing-type').value;
+      const name = document.getElementById('clothing-name').value.trim();
+      const color = document.getElementById('clothing-color').value;
+      const currency = document.getElementById('clothing-currency').value;
+      const price = parseInt(document.getElementById('clothing-price').value) || 10;
+      const desc = document.getElementById('clothing-desc').value.trim();
+
+      if (!name) {
+        showToast('Введите название предмета!');
+        return;
+      }
+
+      const newItem = {
+        id: 'custom_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        type: type,
+        name: name,
+        color: color,
+        priceCurrency: currency,
+        price: price,
+        desc: desc || `Создано игроком ${currentAccount.username}`,
+        creator: currentAccount.username,
+        isCustom: true
+      };
+
+      customClothingItems.unshift(newItem);
+      saveCustomClothing();
+      closeClothingCreatorModal();
+      showToast(`Предмет «${name}» опубликован в Каталог!`);
+      renderCatalog();
+      switchTab('catalog');
+
+      broadcastGlobalNetworkEvent('blox2008/catalog/global', {
+        type: 'catalog_item_new',
+        item: newItem
+      });
+    }
+
+    const BASE_CATALOG_ITEMS = [
+      { id: 'hat_cap', type: 'hat', name: 'Classic Red Cap', priceCurrency: 'tix', price: 20, color: '#dc2626', desc: 'Красная классическая кепка.' },
+      { id: 'hat_tophat', type: 'hat', name: 'Gentleman Top Hat', priceCurrency: 'robux', price: 5, color: '#0f172a', desc: 'Черный цилиндр джентльмена с красной лентой.' },
+      { id: 'hat_cone', type: 'hat', name: 'Traffic Cone', priceCurrency: 'tix', price: 30, color: '#ea580c', desc: 'Оранжевый конус строителя со светоотражающими полосами.' },
+      { id: 'hat_viking', type: 'hat', name: 'Viking Helm', priceCurrency: 'tix', price: 40, color: '#71717a', desc: 'Шлем викинга с золотыми рогами.' }
+    ];
+
+    function getAllCatalogItems() {
+      return [...BASE_CATALOG_ITEMS, ...customClothingItems];
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('catalog-items-grid');
+      if (!grid) return;
+
+      const all = getAllCatalogItems();
+      const isAdmin = isCurrentAccountAdmin();
+
+      grid.innerHTML = all.map(item => {
+        const owned = currentAccount && currentAccount.inventory && currentAccount.inventory.includes(item.id);
+        const isEquippedHat = currentAccount && currentAccount.equippedHat === item.id;
+        const curName = item.priceCurrency === 'robux' ? 'R$' : 'TIX';
+
+        return `
+          <div class="retro-box p-3 flex flex-col justify-between hover:border-blue-400 relative">
+            ${isAdmin ? `
+              <button onclick="adminDeleteCatalogItem('${item.id}', event)" class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-1.5 py-0.5 rounded shadow z-10">
+                Удалить
+              </button>
+            ` : ''}
+            <div>
+              <div class="h-28 bg-[#f2f6fa] rounded border border-slate-200 flex items-center justify-center p-2 mb-2 relative">
+                <span class="w-12 h-12 rounded-full border border-slate-300 shadow-inner flex items-center justify-center font-bold text-white text-xs" style="background-color: ${item.color}">
+                  ${item.name.substring(0, 3)}
+                </span>
+                <span class="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${item.priceCurrency === 'robux' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'}">
+                  ${item.price} ${curName}
+                </span>
+              </div>
+              <h4 class="font-bold text-xs text-[#0a3a6b] mb-0.5 truncate">${escapeHtml(item.name)}</h4>
+              <div class="text-[10px] text-slate-400 mb-1">Создатель: ${escapeHtml(item.creator || 'ROBLOX')}</div>
+              <p class="text-[11px] text-slate-500 mb-2 line-clamp-2">${escapeHtml(item.desc)}</p>
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+              ${owned ? `
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] text-emerald-600 font-bold">Куплено</span>
+                  ${item.type === 'hat' ? `
+                    <button onclick="toggleEquipHat('${item.id}')" class="retro-btn text-[11px] px-2.5 py-0.5 font-bold">
+                      ${isEquippedHat ? 'Снять' : 'Надеть'}
+                    </button>
+                  ` : `
+                    <button onclick="applyClothingColors('${item.type}', '${item.color}')" class="retro-btn text-[11px] px-2.5 py-0.5 font-bold">
+                      Применить
+                    </button>
+                  `}
+                </div>
+              ` : `
+                <button onclick="buyCatalogItem('${item.id}')" class="retro-btn-green w-full py-1 text-xs rounded">
+                  Купить за ${item.price} ${curName}
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function buyCatalogItem(id) {
+      if (!currentAccount) return;
+      const item = getAllCatalogItems().find(i => i.id === id);
+      if (!item) return;
+
+      if (item.priceCurrency === 'robux') {
+        if (currentAccount.robux < item.price) {
+          showToast('Недостаточно Robux!');
+          return;
+        }
+        currentAccount.robux -= item.price;
+      } else {
+        if (currentAccount.tix < item.price) {
+          showToast('Недостаточно TIX!');
+          return;
+        }
+        currentAccount.tix -= item.price;
+      }
+
+      if (!currentAccount.inventory) currentAccount.inventory = [];
+      currentAccount.inventory.push(id);
+
+      if (item.type === 'hat') {
+        currentAccount.equippedHat = id;
+      }
+
+      saveCurrentAccount();
+      showToast(`Вы приобрели «${item.name}»!`);
+      playRetroJumpSound();
+      renderCatalog();
+      renderProfileTab();
+    }
+
+    function toggleEquipHat(id) {
+      if (!currentAccount) return;
+      currentAccount.equippedHat = (currentAccount.equippedHat === id) ? null : id;
+      saveCurrentAccount();
+      renderCatalog();
+      renderProfileTab();
+      showToast(currentAccount.equippedHat ? 'Шляпа надета!' : 'Шляпа снята');
+    }
+
+    function applyClothingColors(type, color) {
+      if (!currentAccount) return;
+      if (type === 'shirt') {
+        currentAccount.colors.torso = color;
+      } else if (type === 'pants') {
+        currentAccount.colors.leftLeg = color;
+        currentAccount.colors.rightLeg = color;
+      }
+      saveCurrentAccount();
+      renderProfileTab();
+      showToast('Цвета одежды применены к персонажу!');
+    }
+
+    function loadForumPosts() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_FORUM);
+        forumThreads = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        forumThreads = [];
+      }
+
+      if (forumThreads.length === 0) {
+        forumThreads = [
+          {
+            id: 'thread_welcome',
+            title: 'Добро пожаловать в классический BLOX2008!',
+            category: 'Общее',
+            author: 'Cheburekin',
+            time: '2008-09-01',
+            content: 'Приветствуем всех строителей и игроков! Здесь можно создавать свои игры в Studio, исследовать ретро-миры и общаться.',
+            likes: ['Cheburekin'],
+            comments: [
+              { author: 'Player2008', text: 'Ура, старый добрый роблокс вернулся!', time: '10 минут назад' }
+            ]
+          },
+          {
+            id: 'thread_showcase',
+            title: 'Делитесь своими постройками из Studio!',
+            category: 'Studio',
+            author: 'BuilderMan',
+            time: 'Сегодня',
+            content: 'Публикуйте названия ваших карт, делитесь идеями и кооперируйтесь для совместной игры!',
+            likes: [],
+            comments: []
+          }
+        ];
+        saveForumPosts();
+      }
+    }
+
+    function saveForumPosts() {
+      try {
+        localStorage.setItem(STORAGE_KEY_FORUM, JSON.stringify(forumThreads));
+      } catch (e) {}
+    }
+
+    function renderForumThreads() {
+      const container = document.getElementById('forum-threads-list');
+      if (!container) return;
+      const isAdmin = isCurrentAccountAdmin();
+
+      container.innerHTML = forumThreads.map(t => {
+        const commentsCount = t.comments ? t.comments.length : 0;
+        const likesCount = t.likes ? t.likes.length : 0;
+
+        return `
+          <div class="retro-box p-3 hover:border-blue-400 cursor-pointer flex items-center justify-between gap-3" onclick="openThreadDetail('${t.id}')">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200">${escapeHtml(t.category)}</span>
+                <h4 class="font-bold text-xs text-[#0a3a6b] hover:underline">${escapeHtml(t.title)}</h4>
+              </div>
+              <div class="text-[11px] text-slate-500">
+                Автор: <b class="text-slate-700">${escapeHtml(t.author)}</b> | ${t.time}
+              </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="text-slate-600 flex items-center gap-1 font-bold">💬 ${commentsCount}</span>
+              <span class="text-rose-600 flex items-center gap-1 font-bold">❤️ ${likesCount}</span>
+              ${isAdmin ? `
+                <button onclick="adminDeleteForumThread('${t.id}', event)" class="bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] px-2 py-0.5 rounded shadow">
+                  Удалить
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openThreadDetail(id) {
+      const thread = forumThreads.find(t => t.id === id);
+      if (!thread) return;
+      currentViewingThread = thread;
+      renderThreadDetail(thread);
+    }
+
+    function closeThreadDetail() {
+      currentViewingThread = null;
+      document.getElementById('forum-detail-view')?.classList.add('hidden');
+      document.getElementById('forum-threads-list')?.classList.remove('hidden');
+    }
+
+    function renderThreadDetail(t) {
+      const view = document.getElementById('forum-detail-view');
+      const list = document.getElementById('forum-threads-list');
+      if (!view || !list) return;
+
+      list.classList.add('hidden');
+      view.classList.remove('hidden');
+
+      const likesCount = t.likes ? t.likes.length : 0;
+      const isLiked = t.likes && t.likes.includes(currentAccount.username);
+
+      view.innerHTML = `
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-3">
+          <button onclick="closeThreadDetail()" class="retro-btn px-2.5 py-1 text-xs font-bold text-blue-900">
+            &laquo; Назад к списку тем
+          </button>
+          <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded">${escapeHtml(t.category)}</span>
+        </div>
+
+        <h3 class="text-base font-bold text-blue-950 mb-1">${escapeHtml(t.title)}</h3>
+        <div class="text-[11px] text-slate-500 mb-3">Автор: <b>${escapeHtml(t.author)}</b> | ${t.time}</div>
+
+        <div class="p-3 bg-slate-50 rounded border border-slate-200 text-xs text-slate-800 leading-relaxed mb-4 whitespace-pre-wrap">${escapeHtml(t.content)}</div>
+
+        <div class="flex items-center gap-3 border-b border-slate-200 pb-3 mb-4">
+          <button onclick="toggleCurrentThreadLike()" class="retro-btn px-3 py-1 text-xs font-bold flex items-center gap-1 ${isLiked ? 'text-red-600' : 'text-slate-700'}">
+            <span>❤️</span> Лайк (<span id="detail-likes-count">${likesCount}</span>)
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-xs text-slate-800">Комментарии (${t.comments ? t.comments.length : 0}):</h4>
+          <div id="thread-comments-box" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+            ${(t.comments || []).map(c => `
+              <div class="p-2 bg-white rounded border border-slate-200 text-xs">
+                <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+                  <b>${escapeHtml(c.author)}</b>
+                  <span>${c.time || 'Только что'}</span>
+                </div>
+                <div class="text-slate-800">${escapeHtml(c.text)}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <form onsubmit="handleNewCommentSubmit(event)" class="flex gap-2 pt-2">
+            <input type="text" id="comment-input-text" required maxlength="150" placeholder="Напишите комментарий..." class="flex-1 border border-gray-300 rounded px-2.5 py-1 text-xs">
+            <button type="submit" class="retro-btn-green px-4 py-1 text-xs rounded font-bold">Ответить</button>
+          </form>
+        </div>
+      `;
+    }
+
+    function toggleCurrentThreadLike() {
+      if (!currentViewingThread || !currentAccount) return;
+      if (!currentViewingThread.likes) currentViewingThread.likes = [];
+      const user = currentAccount.username;
+      const idx = currentViewingThread.likes.indexOf(user);
+      if (idx > -1) {
+        currentViewingThread.likes.splice(idx, 1);
+      } else {
+        currentViewingThread.likes.push(user);
+        playRetroJumpSound();
+      }
+      saveForumPosts();
+      renderThreadDetail(currentViewingThread);
+
+      broadcastGlobalNetworkEvent('blox2008/forum/global', {
+        type: 'forum_like_toggle',
+        threadId: currentViewingThread.id,
+        likes: currentViewingThread.likes
+      });
+    }
+
+    function handleNewCommentSubmit(e) {
+      if (e) e.preventDefault();
+      const inp = document.getElementById('comment-input-text');
+      const text = inp ? inp.value.trim() : '';
+      if (!text || !currentViewingThread) return;
+
+      if (!currentViewingThread.comments) currentViewingThread.comments = [];
+      const newComment = {
+        author: currentAccount.username,
+        text: text,
+        time: 'Только что'
+      };
+      currentViewingThread.comments.push(newComment);
+      saveForumPosts();
+      inp.value = '';
+      renderThreadDetail(currentViewingThread);
+      showToast('Комментарий опубликован!');
+
+      broadcastGlobalNetworkEvent('blox2008/forum/global', {
+        type: 'forum_comment_new',
+        threadId: currentViewingThread.id,
+        comment: newComment
+      });
+    }
+
+    function openNewThreadModal() {
+      const modal = document.getElementById('modal-new-thread');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+    function closeNewThreadModal() {
+      const modal = document.getElementById('modal-new-thread');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function handleCreateThreadSubmit(e) {
+      if (e) e.preventDefault();
+      const cat = document.getElementById('thread-input-cat').value;
+      const title = document.getElementById('thread-input-title').value.trim();
+      const content = document.getElementById('thread-input-content').value.trim();
+
+      if (!title || !content) {
+        showToast('Заполните заголовок и сообщение!');
+        return;
+      }
+
+      const newThread = {
+        id: 'thread_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        title: title,
+        category: cat,
+        author: currentAccount.username,
+        time: 'Только что',
+        content: content,
+        likes: [currentAccount.username],
+        comments: []
+      };
+
+      forumThreads.unshift(newThread);
+      saveForumPosts();
+      closeNewThreadModal();
+      document.getElementById('thread-input-title').value = '';
+      document.getElementById('thread-input-content').value = '';
+      showToast('Тема успешно создана!');
+      renderForumThreads();
+
+      broadcastGlobalNetworkEvent('blox2008/forum/global', {
+        type: 'forum_thread_new',
+        thread: newThread
+      });
+    }
+
+    function handleCustomFaceUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Пожалуйста, выберите файл изображения!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result;
+        currentAccount.customFaceUrl = base64;
+        saveCurrentAccount();
+        updateProfileAvatarPreview();
+        const statusEl = document.getElementById('profile-face-status');
+        if (statusEl) statusEl.textContent = 'Пользовательское лицо загружено ✔';
+        showToast('Своё лицо успешно загружено на скин!');
+        playRetroJumpSound();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetDefaultFace() {
+      if (!currentAccount) return;
+      currentAccount.customFaceUrl = null;
+      saveCurrentAccount();
+      updateProfileAvatarPreview();
+      const statusEl = document.getElementById('profile-face-status');
+      if (statusEl) statusEl.textContent = 'Классическое лицо 2008';
+      showToast('Лицо сброшено на классическое 2008!');
+    }
+
+    function initAccountSystem() {
+      try {
+        const rawAccs = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+        registeredAccounts = rawAccs ? JSON.parse(rawAccs) : {};
+      } catch (e) {
+        registeredAccounts = {};
+      }
+
+      if (!registeredAccounts['Cheburekin']) {
+        registeredAccounts['Cheburekin'] = {
+          username: 'Cheburekin',
+          password: '27102014Ddima',
+          robux: 9999,
+          tix: 9999,
+          blurb: 'Официальный Администратор и Создатель BLOX2008.',
+          colors: {
+            head: '#f3c742',
+            torso: '#0d69ac',
+            leftArm: '#f3c742',
+            rightArm: '#f3c742',
+            leftLeg: '#a1c45a',
+            rightLeg: '#a1c45a'
+          },
+          inventory: ['hat_cap', 'hat_tophat', 'hat_cone', 'hat_viking'],
+          equippedHat: 'hat_tophat',
+          lastDailyReward: Date.now()
+        };
+      }
+
+      if (!registeredAccounts['Player2008']) {
+        registeredAccounts['Player2008'] = {
+          username: 'Player2008',
+          password: 'password123',
+          robux: 20,
+          tix: 80,
+          blurb: 'Играю в BLOX2008!',
+          colors: {
+            head: '#f3c742',
+            torso: '#0d69ac',
+            leftArm: '#f3c742',
+            rightArm: '#f3c742',
+            leftLeg: '#a1c45a',
+            rightLeg: '#a1c45a'
+          },
+          inventory: ['hat_cap'],
+          equippedHat: 'hat_cap',
+          lastDailyReward: Date.now()
+        };
+      }
+
+      saveAllAccounts();
+
+      let activeName = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+      if (!activeName || !registeredAccounts[activeName]) {
+        activeName = 'Player2008';
+      }
+
+      currentAccount = registeredAccounts[activeName];
+      checkDailyTixReward();
+      updateUIHeader();
+      verifyCurrentAccountBanState();
+    }
+
+    function saveAllAccounts() {
+      try {
+        localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(registeredAccounts));
+      } catch (e) {}
+    }
+
+    function saveCurrentAccount() {
+      if (!currentAccount) return;
+      registeredAccounts[currentAccount.username] = currentAccount;
+      saveAllAccounts();
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, currentAccount.username);
+      updateUIHeader();
+    }
+
+    function checkDailyTixReward() {
+      if (!currentAccount) return;
+      const now = Date.now();
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      if (!currentAccount.lastDailyReward || now - currentAccount.lastDailyReward >= ONE_DAY) {
+        currentAccount.tix = (currentAccount.tix || 0) + 25;
+        currentAccount.lastDailyReward = now;
+        saveCurrentAccount();
+        showToast('Ежедневный бонус: +25 TIX начислено на баланс!');
+      }
+    }
+
+    function updateUIHeader() {
+      if (!currentAccount) return;
+      document.getElementById('header-robux').textContent = currentAccount.robux;
+      document.getElementById('header-tix').textContent = currentAccount.tix;
+
+      const topbarArea = document.getElementById('topbar-user-area');
+      topbarArea.innerHTML = `
+        <span>Вы вошли как: <b class="text-white">${escapeHtml(currentAccount.username)}</b></span>
+        <span class="text-slate-400">|</span>
+        <button onclick="openAuthModal()" class="text-blue-300 hover:text-white underline">Войти / Сменить аккаунт</button>
+      `;
+
+      const headerAccountBtn = document.getElementById('header-account-btn-container');
+      headerAccountBtn.innerHTML = `
+        <button onclick="switchTab('profile')" class="flex items-center gap-1.5 text-blue-200 hover:text-white font-semibold text-xs">
+          <span class="w-3 h-3 rounded-sm inline-block" style="background-color: ${currentAccount.colors.torso}"></span>
+          <span>${escapeHtml(currentAccount.username)}</span>
+        </button>
+      `;
+
+      updateAdminUIElements();
+    }
+
+    function openAuthModal() {
+      setAuthMode('login');
+      document.getElementById('modal-auth').classList.remove('hidden');
+      document.getElementById('modal-auth').classList.add('flex');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('modal-auth').classList.add('hidden');
+      document.getElementById('modal-auth').classList.remove('flex');
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const title = document.getElementById('auth-modal-title');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const tabLogin = document.getElementById('auth-tab-login');
+      const tabReg = document.getElementById('auth-tab-register');
+
+      if (mode === 'login') {
+        title.textContent = 'Вход в аккаунт';
+        submitBtn.textContent = 'Войти';
+        tabLogin.className = 'flex-1 py-1 font-bold text-blue-900 border-b-2 border-blue-600';
+        tabReg.className = 'flex-1 py-1 font-bold text-slate-500';
+      } else {
+        title.textContent = 'Регистрация аккаунта';
+        submitBtn.textContent = 'Зарегистрироваться';
+        tabReg.className = 'flex-1 py-1 font-bold text-blue-900 border-b-2 border-blue-600';
+        tabLogin.className = 'flex-1 py-1 font-bold text-slate-500';
+      }
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('auth-input-username').value.trim();
+      const password = document.getElementById('auth-input-password').value;
+
+      if (!username || !password) {
+        showToast('Заполните логин и пароль!');
+        return;
+      }
+
+      if (authMode === 'login') {
+        const user = registeredAccounts[username];
+        if (!user) {
+          showToast('Аккаунт с таким ником не найден! Зарегистрируйтесь.');
+          return;
+        }
+        if (user.password !== password) {
+          showToast('Неверный пароль!');
+          return;
+        }
+        currentAccount = user;
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, username);
+        checkDailyTixReward();
+        closeAuthModal();
+        showToast(`Добро пожаловать, ${username}!`);
+        updateUIHeader();
+        renderProfileTab();
+        verifyCurrentAccountBanState();
+      } else {
+        if (username === 'Cheburekin') {
+          showToast('В аккаунт Cheburekin можно только войти с паролем!');
+          return;
+        }
+        if (registeredAccounts[username]) {
+          showToast('Такой никнейм уже занят! Выберите другой.');
+          return;
+        }
+        const newAcc = {
+          username: username,
+          password: password,
+          robux: 20,
+          tix: 80,
+          blurb: 'Новичок в BLOX2008!',
+          colors: {
+            head: '#f3c742',
+            torso: '#0d69ac',
+            leftArm: '#f3c742',
+            rightArm: '#f3c742',
+            leftLeg: '#a1c45a',
+            rightLeg: '#a1c45a'
+          },
+          inventory: ['hat_cap'],
+          equippedHat: 'hat_cap',
+          lastDailyReward: Date.now()
+        };
+        registeredAccounts[username] = newAcc;
+        currentAccount = newAcc;
+        saveAllAccounts();
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, username);
+        closeAuthModal();
+        showToast(`Аккаунт ${username} успешно создан!`);
+        updateUIHeader();
+        renderProfileTab();
+        verifyCurrentAccountBanState();
+      }
+    }
+
+    function renderAvatar2DSvg(colors, hatId, size = 120) {
+      const c = colors || currentAccount.colors;
+      let hatSvg = '';
+      if (hatId === 'hat_cap') {
+        hatSvg = `<ellipse cx="60" cy="24" rx="20" ry="10" fill="#dc2626"/><path d="M42 24 Q60 30 78 24 Q60 20 42 24 Z" fill="#991b1b"/>`;
+      } else if (hatId === 'hat_tophat') {
+        hatSvg = `<rect x="46" y="2" width="28" height="24" fill="#1e293b"/><ellipse cx="60" cy="26" rx="22" ry="5" fill="#0f172a"/><rect x="46" y="21" width="28" height="4" fill="#ef4444"/>`;
+      } else if (hatId === 'hat_cone') {
+        hatSvg = `<polygon points="60,2 47,26 73,26" fill="#ea580c"/><polygon points="60,11 53,20 67,20" fill="#ffffff"/>`;
+      } else if (hatId === 'hat_viking') {
+        hatSvg = `<ellipse cx="60" cy="22" rx="20" ry="11" fill="#71717a"/><path d="M40 22 C34 10, 44 4, 46 2" stroke="#f59e0b" stroke-width="4" fill="none"/><path d="M80 22 C86 10, 76 4, 74 2" stroke="#f59e0b" stroke-width="4" fill="none"/>`;
+      } else {
+        const customItem = customClothingItems.find(i => i.id === hatId);
+        if (customItem && customItem.type === 'hat') {
+          hatSvg = `<ellipse cx="60" cy="22" rx="22" ry="10" fill="${customItem.color}" stroke="#000" stroke-width="2"/>`;
+        }
+      }
+
+      let faceContent = `
+        <circle cx="53" cy="33" r="2.5" fill="#111" />
+        <circle cx="67" cy="33" r="2.5" fill="#111" />
+        <path d="M54 42 Q60 48 66 42" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round" />
+      `;
+
+      if (currentAccount && currentAccount.customFaceUrl) {
+        faceContent = `
+          <image href="${currentAccount.customFaceUrl}" x="44" y="20" width="32" height="32" preserveAspectRatio="none"/>
+        `;
+      }
+
+      return `
+        <svg width="${size}" height="${size * 1.3}" viewBox="0 0 120 156" class="drop-shadow">
+          <rect x="36" y="52" width="48" height="52" fill="${c.torso}" stroke="#1e293b" stroke-width="2" rx="2"/>
+          <rect x="14" y="52" width="20" height="52" fill="${c.leftArm}" stroke="#1e293b" stroke-width="2" rx="2"/>
+          <rect x="86" y="52" width="20" height="52" fill="${c.rightArm}" stroke="#1e293b" stroke-width="2" rx="2"/>
+          <rect x="36" y="104" width="23" height="50" fill="${c.leftLeg}" stroke="#1e293b" stroke-width="2" rx="2"/>
+          <rect x="61" y="104" width="23" height="50" fill="${c.rightLeg}" stroke="#1e293b" stroke-width="2" rx="2"/>
+          <rect x="44" y="20" width="32" height="32" fill="${c.head}" stroke="#1e293b" stroke-width="2" rx="3"/>
+          ${faceContent}
+          ${hatSvg}
+        </svg>
+      `;
+    }
+
+    function renderProfileTab() {
+      if (!currentAccount) return;
+      document.getElementById('profile-display-name').textContent = currentAccount.username;
+      document.getElementById('profile-robux-val').textContent = currentAccount.robux + ' R$';
+      document.getElementById('profile-tix-val').textContent = currentAccount.tix + ' TIX';
+      document.getElementById('profile-blurb-input').value = currentAccount.blurb || '';
+
+      document.getElementById('col-head').value = currentAccount.colors.head;
+      document.getElementById('col-torso').value = currentAccount.colors.torso;
+      document.getElementById('col-leftArm').value = currentAccount.colors.leftArm;
+      document.getElementById('col-rightArm').value = currentAccount.colors.rightArm;
+      document.getElementById('col-leftLeg').value = currentAccount.colors.leftLeg;
+      document.getElementById('col-rightLeg').value = currentAccount.colors.rightLeg;
+
+      const hatSelect = document.getElementById('profile-hat-select');
+      const invItems = (currentAccount.inventory || []).map(id => getAllCatalogItems().find(i => i.id === id)).filter(Boolean);
+      hatSelect.innerHTML = `<option value="">(Без шляпы)</option>` + invItems.filter(i => i.type === 'hat').map(item => `
+        <option value="${item.id}" ${currentAccount.equippedHat === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>
+      `).join('');
+
+      const faceStatus = document.getElementById('profile-face-status');
+      if (faceStatus) {
+        faceStatus.textContent = currentAccount.customFaceUrl ? 'Пользовательское лицо загружено ✔' : 'Классическое лицо 2008';
+      }
+
+      updateProfileAvatarPreview();
+      updateAdminUIElements();
+
+      ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'].forEach(part => {
+        const inp = document.getElementById('col-' + part);
+        if (inp) inp.oninput = updateProfileAvatarPreview;
+      });
+    }
+
+    function updateProfileAvatarPreview() {
+      const colors = {
+        head: document.getElementById('col-head').value,
+        torso: document.getElementById('col-torso').value,
+        leftArm: document.getElementById('col-leftArm').value,
+        rightArm: document.getElementById('col-rightArm').value,
+        leftLeg: document.getElementById('col-leftLeg').value,
+        rightLeg: document.getElementById('col-rightLeg').value
+      };
+      const hat = document.getElementById('profile-hat-select').value;
+      document.getElementById('profile-avatar-preview').innerHTML = renderAvatar2DSvg(colors, hat, 140);
+    }
+
+    function saveAvatarColors(e) {
+      if (e) e.preventDefault();
+      currentAccount.colors = {
+        head: document.getElementById('col-head').value,
+        torso: document.getElementById('col-torso').value,
+        leftArm: document.getElementById('col-leftArm').value,
+        rightArm: document.getElementById('col-rightArm').value,
+        leftLeg: document.getElementById('col-leftLeg').value,
+        rightLeg: document.getElementById('col-rightLeg').value
+      };
+      saveCurrentAccount();
+      showToast('Цвета аватара сохранены!');
+    }
+
+    function resetDefaultColors() {
+      document.getElementById('col-head').value = '#f3c742';
+      document.getElementById('col-torso').value = '#0d69ac';
+      document.getElementById('col-leftArm').value = '#f3c742';
+      document.getElementById('col-rightArm').value = '#f3c742';
+      document.getElementById('col-leftLeg').value = '#a1c45a';
+      document.getElementById('col-rightLeg').value = '#a1c45a';
+      updateProfileAvatarPreview();
+    }
+
+    function changeEquippedHat(hatId) {
+      currentAccount.equippedHat = hatId || null;
+      saveCurrentAccount();
+      updateProfileAvatarPreview();
+      showToast(hatId ? 'Шляпа надета!' : 'Шляпа снята');
+    }
+
+    function saveBlurb() {
+      currentAccount.blurb = document.getElementById('profile-blurb-input').value.trim();
+      saveCurrentAccount();
+      showToast('Статус профиля обновлен!');
+    }
+
+    const DEFAULT_SERVERS = [
+      { roomId: 'blox-crossroads-public', name: 'Crossroads [Classic 2008]', place: 'Crossroads', author: 'Roblox' },
+      { roomId: 'blox-happy-home-public', name: 'Happy Home in Robloxia', place: 'Happy Home', author: 'Roblox' },
+      { roomId: 'blox-chaos-canyon-public', name: 'Chaos Canyon Adventures', place: 'Chaos Canyon', author: 'Roblox' }
+    ];
+
+    let gameSearchQuery = '';
+    let selectedPlaceFilter = 'all';
+
+    function loadCustomServers() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_SERVERS);
+        publishedServers = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        publishedServers = [];
+      }
+    }
+
+    function saveCustomServers() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CUSTOM_SERVERS, JSON.stringify(publishedServers));
+      } catch (e) {}
+    }
+
+    function getAllServers() {
+      return [...publishedServers, ...DEFAULT_SERVERS];
+    }
+
+    function handleGameSearch(val) {
+      gameSearchQuery = (val || '').toLowerCase().trim();
+      renderServerList();
+    }
+
+    function filterServerPlace(p) {
+      selectedPlaceFilter = p;
+      ['all', 'cross', 'home', 'canyon', 'custom'].forEach(id => {
+        const el = document.getElementById('srv-filter-' + id);
+        if (el) el.classList.remove('active');
+      });
+      if (p === 'all') document.getElementById('srv-filter-all')?.classList.add('active');
+      if (p === 'Crossroads') document.getElementById('srv-filter-cross')?.classList.add('active');
+      if (p === 'Happy Home') document.getElementById('srv-filter-home')?.classList.add('active');
+      if (p === 'Chaos Canyon') document.getElementById('srv-filter-canyon')?.classList.add('active');
+      if (p === 'Custom') document.getElementById('srv-filter-custom')?.classList.add('active');
+      renderServerList();
+    }
+
+    function renderServerList() {
+      const container = document.getElementById('servers-container');
+      if (!container) return;
+
+      let list = getAllServers();
+
+      if (selectedPlaceFilter === 'Custom') {
+        list = list.filter(s => s.isCustom);
+      } else if (selectedPlaceFilter !== 'all') {
+        list = list.filter(s => s.place === selectedPlaceFilter);
+      }
+
+      if (gameSearchQuery) {
+        list = list.filter(s => s.name.toLowerCase().includes(gameSearchQuery) || (s.author && s.author.toLowerCase().includes(gameSearchQuery)));
+      }
+
+      const isAdmin = isCurrentAccountAdmin();
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="retro-box p-8 text-center text-xs text-slate-500">
+            Игры не найдены. Попробуйте изменить фильтр или создайте свою карту в Studio!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(srv => {
+        return `
+          <div class="retro-box p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-blue-400 relative">
+            <div class="flex items-center space-x-3">
+              <div class="w-14 h-14 bg-gradient-to-br from-blue-700 to-indigo-900 rounded border border-blue-900 text-white flex items-center justify-center font-black text-lg shadow-inner">
+                3D
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-[#003366] hover:underline cursor-pointer flex items-center gap-1.5" onclick="joinGameServer('${srv.roomId}')">
+                  ${escapeHtml(srv.name)}
+                  ${srv.isCustom ? `<span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-300">Studio Place</span>` : ''}
+                </h4>
+                <div class="text-[11px] text-slate-500">
+                  Карта: <b>${escapeHtml(srv.place)}</b> | Создатель: <b class="text-slate-700">${escapeHtml(srv.author || 'ROBLOX')}</b>
+                </div>
+                <div class="text-[10px] text-emerald-700 font-mono mt-0.5">
+                  ● Онлайн-комната: ${srv.roomId}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              ${isAdmin ? `
+                <button onclick="adminDeleteGameServer('${srv.roomId}', event)" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-2.5 py-1.5 rounded shadow">
+                  Удалить
+                </button>
+              ` : ''}
+              <button onclick="joinGameServer('${srv.roomId}')" class="retro-btn-green px-5 py-2 text-xs rounded font-bold">
+                ▶ Играть в 3D
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+
+      const targetView = document.getElementById('view-' + tabId);
+      const targetBtn = document.getElementById('tab-btn-' + tabId);
+      const breadcrumb = document.getElementById('breadcrumb');
+
+      if (targetView && targetBtn) {
+        targetView.classList.remove('hidden');
+        targetBtn.classList.add('active');
+
+        if (tabId === 'games') {
+          breadcrumb.innerHTML = 'Games &raquo; Список 3D миров';
+          renderServerList();
+        } else if (tabId === 'catalog') {
+          breadcrumb.innerHTML = 'Catalog &raquo; Классический каталог вещей';
+          renderCatalog();
+        } else if (tabId === 'studio') {
+          breadcrumb.innerHTML = 'Studio &raquo; Конструктор и редактор карт 2008';
+          setTimeout(() => {
+            initStudioEditor();
+          }, 50);
+        } else if (tabId === 'forum') {
+          breadcrumb.innerHTML = 'Forum &raquo; Обсуждения и общение';
+          renderForumThreads();
+        } else if (tabId === 'profile') {
+          breadcrumb.innerHTML = 'My Account &raquo; Настройка аватара и скин';
+          renderProfileTab();
+        } else if (tabId === 'info') {
+          breadcrumb.innerHTML = 'Info &raquo; Информация и правила платформы';
+        }
+      }
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('retro-toast');
+      const textElem = document.getElementById('toast-text');
+      if (!toast || !textElem) return;
+      textElem.textContent = text;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.remove('opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 250);
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    let gameScene, gameCamera, gameRenderer;
+    let gameAnimationId = null;
+    let activeNetworkRoomId = null;
+    let mqttClient = null;
+    let clientSessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+    let remotePlayers = {};
+    let lastNetworkMoveSync = 0;
+    let playerHealth = 100;
+    let hasEquippedSword = false; // Spawns completely WITHOUT items by default!
+    let swordMeshInstance = null;
+    let isAttacking = false;
+    let attackTimer = 0;
+
+    let player3D = {
+      pos: new THREE.Vector3(0, 0, 10),
+      vel: new THREE.Vector3(0, 0, 0),
+      rotY: 0,
+      isGrounded: true,
+      avatarModel: null,
+      animCycle: 0
+    };
+
+    let cameraAngles = { yaw: 0, pitch: 0.35, distance: 14 };
+    let inputKeys = { w: false, a: false, s: false, d: false };
+    let touchJoystickInput = { x: 0, y: 0 };
+    let isMouseDown = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+
+    function createClassicPlasticMaterial(hexColor, repeatX = 1, repeatY = 1) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = hexColor;
+      ctx.fillRect(0, 0, 64, 64);
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, 64, 64);
+
+      // 4 Classic Studs per texture cell
+      const centers = [{ x: 16, y: 16 }, { x: 48, y: 16 }, { x: 16, y: 48 }, { x: 48, y: 48 }];
+      centers.forEach(c => {
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y + 1.5, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      return new THREE.MeshLambertMaterial({ map: tex });
+    }
+
+    function init3DGameWorld(placeName, customPartsData = null) {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || (window.innerHeight - 40);
+
+      gameScene = new THREE.Scene();
+      gameScene.background = new THREE.Color(placeName === 'Chaos Canyon' ? 0xf6ba7a : 0x7ec0ee);
+      gameScene.fog = new THREE.FogExp2(gameScene.background, 0.005);
+
+      gameCamera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000);
+
+      const canvas = document.getElementById('three-viewport');
+      if (gameRenderer) {
+        try { gameRenderer.dispose(); } catch (e) {}
+      }
+
+      gameRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      gameRenderer.setSize(width, height);
+      gameRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      gameRenderer.shadowMap.enabled = true;
+
+      const amb = new THREE.AmbientLight(0xffffff, 0.75);
+      gameScene.add(amb);
+      const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+      sun.position.set(50, 90, 40);
+      gameScene.add(sun);
+
+      // Baseplate
+      const baseplateMat = createClassicPlasticMaterial('#228b22', 40, 40);
+      const baseplate = new THREE.Mesh(new THREE.BoxGeometry(240, 4, 240), baseplateMat);
+      baseplate.position.y = -2;
+      gameScene.add(baseplate);
+
+      // Build Map
+      if (customPartsData && customPartsData.length > 0) {
+        customPartsData.forEach(p => {
+          createBlockObstacle(p.x, p.y, p.z, p.w, p.h, p.d, p.color, gameScene);
+        });
+      } else {
+        buildDefaultPlaceObstacles(placeName);
+      }
+
+      createLocal3DPlayer();
+      // Notice: No world items spawn on ground / pedestals per user request!
+
+      window.addEventListener('resize', onGameResize);
+    }
+
+    function onGameResize() {
+      if (!gameCamera || !gameRenderer) return;
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      gameCamera.aspect = w / h;
+      gameCamera.updateProjectionMatrix();
+      gameRenderer.setSize(w, h);
+    }
+
+    function buildDefaultPlaceObstacles(place) {
+      if (place === 'Crossroads' || place === 'all') {
+        createBlockObstacle(0, 15, -40, 20, 30, 20, 0x1f2937);
+        createBlockObstacle(0, 20, -15, 8, 2, 30, 0xfacc15);
+        createBlockObstacle(-35, 4, -10, 12, 8, 12, 0xdc2626);
+        createBlockObstacle(35, 6, -10, 12, 12, 12, 0x2563eb);
+        createBlockObstacle(-30, 10, 35, 24, 20, 14, 0x64748b);
+        createBlockObstacle(25, 4, 25, 3, 8, 3, 0x78350f);
+        createBlockObstacle(25, 11, 25, 10, 6, 10, 0x16a34a);
+      } else if (place === 'Happy Home') {
+        createBlockObstacle(0, 8, -20, 32, 16, 2, 0xdc2626);
+        createBlockObstacle(-15, 8, -5, 2, 16, 30, 0xdc2626);
+        createBlockObstacle(15, 8, -5, 2, 16, 30, 0xdc2626);
+        createBlockObstacle(0, 17, -5, 36, 2, 34, 0x1e293b);
+        createBlockObstacle(10, 20, -5, 4, 8, 4, 0x475569);
+        for (let fx = -24; fx <= 24; fx += 8) {
+          createBlockObstacle(fx, 1.5, 18, 6, 3, 1, 0xffffff);
+        }
+      } else if (place === 'Chaos Canyon') {
+        createBlockObstacle(-40, 12, -20, 30, 24, 30, 0xb45309);
+        createBlockObstacle(40, 16, -20, 30, 32, 30, 0x9a3412);
+        createBlockObstacle(0, 18, -20, 50, 2, 8, 0x451a03);
+        createBlockObstacle(0, 8, 20, 20, 16, 20, 0x78350f);
+      }
+    }
+
+    function createBlockObstacle(x, y, z, w, h, d, hex, targetScene = gameScene) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const colorStr = typeof hex === 'number' ? '#' + hex.toString(16).padStart(6, '0') : hex;
+      const mat = createClassicPlasticMaterial(colorStr, Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(d / 2)));
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      targetScene.add(m);
+      return m;
+    }
+
+    function createClassicSwordMesh() {
+      const swordGroup = new THREE.Group();
+
+      const bladeGeo = new THREE.BoxGeometry(0.35, 2.7, 0.08);
+      const bladeMat = new THREE.MeshStandardMaterial({
+        color: 0xdae3eb,
+        metalness: 0.85,
+        roughness: 0.2
+      });
+      const bladeMesh = new THREE.Mesh(bladeGeo, bladeMat);
+      bladeMesh.position.y = 0.75;
+      swordGroup.add(bladeMesh);
+
+      const tipGeo = new THREE.ConeGeometry(0.24, 0.5, 4);
+      tipGeo.rotateY(Math.PI / 4);
+      const tipMesh = new THREE.Mesh(tipGeo, bladeMat);
+      tipMesh.position.y = 2.25;
+      swordGroup.add(tipMesh);
+
+      const guardGeo = new THREE.BoxGeometry(1.1, 0.16, 0.32);
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xeab308,
+        metalness: 0.75,
+        roughness: 0.3
+      });
+      const guardMesh = new THREE.Mesh(guardGeo, goldMat);
+      guardMesh.position.y = -0.62;
+      swordGroup.add(guardMesh);
+
+      const hiltGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 10);
+      const hiltMat = new THREE.MeshLambertMaterial({ color: 0x332211 });
+      const hiltMesh = new THREE.Mesh(hiltGeo, hiltMat);
+      hiltMesh.position.y = -1.05;
+      swordGroup.add(hiltMesh);
+
+      const pommelGeo = new THREE.SphereGeometry(0.18, 12, 12);
+      const pommelMesh = new THREE.Mesh(pommelGeo, goldMat);
+      pommelMesh.position.y = -1.5;
+      swordGroup.add(pommelMesh);
+
+      return swordGroup;
+    }
+
+    function build3DAvatarMesh(colors, hatId, customFaceUrl) {
+      const group = new THREE.Group();
+      const c = colors || currentAccount.colors;
+
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 1), createClassicPlasticMaterial(c.torso, 1, 1));
+      torso.position.y = 3;
+      group.add(torso);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshLambertMaterial({ color: new THREE.Color(c.head) }));
+      head.position.y = 4.6;
+      group.add(head);
+
+      const faceMat = new THREE.MeshBasicMaterial({ transparent: true });
+      const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), faceMat);
+      facePlane.position.set(0, 4.6, 0.61);
+      group.add(facePlane);
+
+      if (customFaceUrl) {
+        new THREE.TextureLoader().load(customFaceUrl, (tex) => {
+          faceMat.map = tex;
+          faceMat.needsUpdate = true;
+        }, undefined, () => {
+          applyClassicFaceTexture(faceMat, c.head);
+        });
+      } else {
+        applyClassicFaceTexture(faceMat, c.head);
+      }
+
+      function applyClassicFaceTexture(targetMat, headColor) {
+        const faceCanvas = document.createElement('canvas');
+        faceCanvas.width = 128;
+        faceCanvas.height = 128;
+        const fctx = faceCanvas.getContext('2d');
+        fctx.fillStyle = headColor;
+        fctx.fillRect(0, 0, 128, 128);
+        fctx.fillStyle = '#000000';
+        fctx.fillRect(32, 40, 16, 20);
+        fctx.fillRect(80, 40, 16, 20);
+        fctx.lineWidth = 8;
+        fctx.beginPath();
+        fctx.arc(64, 76, 28, 0.1 * Math.PI, 0.9 * Math.PI);
+        fctx.stroke();
+        targetMat.map = new THREE.CanvasTexture(faceCanvas);
+        targetMat.needsUpdate = true;
+      }
+
+      const leftArmPivot = new THREE.Group();
+      leftArmPivot.position.set(-1.5, 4, 0);
+      const lArm = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), createClassicPlasticMaterial(c.leftArm, 1, 1));
+      lArm.position.y = -1;
+      leftArmPivot.add(lArm);
+      group.add(leftArmPivot);
+
+      const rightArmPivot = new THREE.Group();
+      rightArmPivot.position.set(1.5, 4, 0);
+      const rArm = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), createClassicPlasticMaterial(c.rightArm, 1, 1));
+      rArm.position.y = -1;
+      rightArmPivot.add(rArm);
+      group.add(rightArmPivot);
+
+      // Sword mesh initially hidden unless given/equipped
+      const sword = createClassicSwordMesh();
+      sword.position.set(0, -0.9, 0.65);
+      sword.rotation.x = Math.PI / 3.5;
+      sword.visible = hasEquippedSword;
+      rightArmPivot.add(sword);
+      swordMeshInstance = sword;
+
+      const leftLegPivot = new THREE.Group();
+      leftLegPivot.position.set(-0.5, 2, 0);
+      const lLeg = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), createClassicPlasticMaterial(c.leftLeg, 1, 1));
+      lLeg.position.y = -1;
+      leftLegPivot.add(lLeg);
+      group.add(leftLegPivot);
+
+      const rightLegPivot = new THREE.Group();
+      rightLegPivot.position.set(0.5, 2, 0);
+      const rLeg = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), createClassicPlasticMaterial(c.rightLeg, 1, 1));
+      rLeg.position.y = -1;
+      rightLegPivot.add(rLeg);
+      group.add(rightLegPivot);
+
+      if (hatId === 'hat_cap') {
+        const capGroup = new THREE.Group();
+        const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.45, 16), new THREE.MeshLambertMaterial({ color: 0xdc2626 }));
+        capCrown.position.y = 5.35;
+        capGroup.add(capCrown);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 0.7), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+        visor.position.set(0, 5.2, 0.9);
+        visor.rotation.x = 0.1;
+        capGroup.add(visor);
+        group.add(capGroup);
+      } else if (hatId === 'hat_tophat') {
+        const hatGroup = new THREE.Group();
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.08, 20), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
+        brim.position.y = 5.24;
+        hatGroup.add(brim);
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.82, 1.3, 20), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+        crown.position.y = 5.9;
+        hatGroup.add(crown);
+        const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.83, 0.83, 0.22, 20), new THREE.MeshLambertMaterial({ color: 0xdc2626 }));
+        ribbon.position.y = 5.38;
+        hatGroup.add(ribbon);
+        group.add(hatGroup);
+      } else if (hatId === 'hat_cone') {
+        const coneGroup = new THREE.Group();
+        const coneBase = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.4), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+        coneBase.position.y = 5.24;
+        coneGroup.add(coneBase);
+        const coneBody = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.6, 16), new THREE.MeshLambertMaterial({ color: 0xea580c }));
+        coneBody.position.y = 6.05;
+        coneGroup.add(coneBody);
+        const stripe1 = new THREE.Mesh(new THREE.ConeGeometry(0.48, 0.25, 16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+        stripe1.position.y = 6.15;
+        coneGroup.add(stripe1);
+        group.add(coneGroup);
+      } else if (hatId === 'hat_viking') {
+        const vikGroup = new THREE.Group();
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.85, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x71717a, metalness: 0.6, roughness: 0.3 }));
+        dome.position.y = 5.0;
+        vikGroup.add(dome);
+        const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 }));
+        hornL.position.set(-0.85, 5.7, 0);
+        hornL.rotation.z = 0.55;
+        vikGroup.add(hornL);
+        const hornR = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 }));
+        hornR.position.set(0.85, 5.7, 0);
+        hornR.rotation.z = -0.55;
+        vikGroup.add(hornR);
+        group.add(vikGroup);
+      } else {
+        const customItem = customClothingItems.find(i => i.id === hatId);
+        if (customItem && customItem.type === 'hat') {
+          const customMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.9, 0.6, 16), new THREE.MeshLambertMaterial({ color: customItem.color }));
+          customMesh.position.y = 5.4;
+          group.add(customMesh);
+        }
+      }
+
+      return {
+        root: group,
+        leftArmPivot: leftArmPivot,
+        rightArmPivot: rightArmPivot,
+        leftLegPivot: leftLegPivot,
+        rightLegPivot: rightLegPivot
+      };
+    }
+
+    function createLocal3DPlayer() {
+      const colors = currentAccount ? currentAccount.colors : null;
+      const hat = currentAccount ? currentAccount.equippedHat : null;
+      const face = currentAccount ? currentAccount.customFaceUrl : null;
+      const model = build3DAvatarMesh(colors, hat, face);
+      player3D.avatarModel = model;
+      player3D.pos.set(0, 0, 10);
+      player3D.vel.set(0, 0, 0);
+      model.root.position.copy(player3D.pos);
+      if (gameScene) gameScene.add(model.root);
+    }
+
+    function setupInGameInputListeners() {
+      window.addEventListener('keydown', (e) => {
+        const chatInput = document.getElementById('ingame-chat-input');
+        const isChat = (document.activeElement === chatInput);
+
+        if (e.key === 'Enter') {
+          if (isChat) {
+            sendChatMessage();
+          } else {
+            chatInput?.focus();
+            resetMovementKeys();
+          }
+          return;
+        }
+
+        if (e.key === 'Escape' && isChat) {
+          chatInput.blur();
+          resetMovementKeys();
+          document.getElementById('three-viewport')?.focus();
+          return;
+        }
+
+        if (isChat) return;
+
+        const code = e.code;
+        const key = e.key ? e.key.toLowerCase() : '';
+
+        if (code === 'KeyW' || key === 'w' || key === 'ц' || code === 'ArrowUp') inputKeys.w = true;
+        if (code === 'KeyA' || key === 'a' || key === 'ф' || code === 'ArrowLeft') inputKeys.a = true;
+        if (code === 'KeyS' || key === 's' || key === 'ы' || code === 'ArrowDown') inputKeys.s = true;
+        if (code === 'KeyD' || key === 'd' || key === 'в' || code === 'ArrowRight') inputKeys.d = true;
+
+        if (key === '1' || code === 'Digit1') selectHotbarSlot(1);
+
+        if ((code === 'Space' || key === ' ') && (player3D.isGrounded || adminFlyMode)) {
+          if (adminFlyMode) {
+            player3D.pos.y += 2.0;
+          } else {
+            player3D.vel.y = 12.0;
+            player3D.isGrounded = false;
+            playRetroJumpSound();
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        const code = e.code;
+        const key = e.key ? e.key.toLowerCase() : '';
+
+        if (code === 'KeyW' || key === 'w' || key === 'ц' || code === 'ArrowUp') inputKeys.w = false;
+        if (code === 'KeyA' || key === 'a' || key === 'ф' || code === 'ArrowLeft') inputKeys.a = false;
+        if (code === 'KeyS' || key === 's' || key === 'ы' || code === 'ArrowDown') inputKeys.s = false;
+        if (code === 'KeyD' || key === 'd' || key === 'в' || code === 'ArrowRight') inputKeys.d = false;
+      });
+
+      window.addEventListener('blur', () => {
+        resetMovementKeys();
+      });
+
+      const container = document.getElementById('canvas-container');
+      const viewport = document.getElementById('three-viewport');
+
+      container?.addEventListener('mousedown', (e) => {
+        if (e.target.id === 'three-viewport') {
+          isMouseDown = true;
+          prevMouseX = e.clientX;
+          prevMouseY = e.clientY;
+          document.getElementById('ingame-chat-input')?.blur();
+          viewport?.focus();
+
+          if (e.button === 0 && !isMouseDown) {
+            performPlayerAttack();
+          }
+        }
+      });
+
+      window.addEventListener('mouseup', () => { isMouseDown = false; });
+      window.addEventListener('mousemove', (e) => {
+        if (!isMouseDown) return;
+        const dx = e.clientX - prevMouseX;
+        const dy = e.clientY - prevMouseY;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+
+        cameraAngles.yaw -= dx * 0.007;
+        cameraAngles.pitch += dy * 0.007;
+        cameraAngles.pitch = Math.max(0.05, Math.min(1.4, cameraAngles.pitch));
+      });
+
+      viewport?.addEventListener('click', () => performPlayerAttack());
+
+      setupMobileHUD(container);
+    }
+
+    function resetMovementKeys() {
+      inputKeys.w = false; inputKeys.a = false; inputKeys.s = false; inputKeys.d = false;
+      touchJoystickInput.x = 0; touchJoystickInput.y = 0;
+    }
+
+    function setupMobileHUD(container) {
+      const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (isTouch || window.innerWidth < 800) {
+        document.getElementById('mobile-controls-overlay')?.classList.remove('hidden');
+      }
+
+      const jumpBtn = document.getElementById('mobile-jump-btn');
+      jumpBtn?.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (player3D.isGrounded || adminFlyMode) {
+          if (adminFlyMode) {
+            player3D.pos.y += 2.0;
+          } else {
+            player3D.vel.y = 12.0;
+            player3D.isGrounded = false;
+            playRetroJumpSound();
+          }
+        }
+      }, { passive: false });
+
+      const joyZone = document.getElementById('mobile-joystick-zone');
+      const joyBase = document.getElementById('joystick-base');
+      const joyThumb = document.getElementById('joystick-thumb');
+      let joyId = null;
+      let baseRect = null;
+
+      joyZone?.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        joyId = t.identifier;
+        baseRect = joyBase.getBoundingClientRect();
+        handleJoy(t);
+      }, { passive: false });
+
+      window.addEventListener('touchmove', (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          if (t.identifier === joyId) {
+            e.preventDefault();
+            handleJoy(t);
+          }
+        }
+      }, { passive: false });
+
+      function endJoy(e) {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joyId) {
+            joyId = null;
+            touchJoystickInput.x = 0;
+            touchJoystickInput.y = 0;
+            if (joyThumb) joyThumb.style.transform = 'translate(-50%, -50%)';
+          }
+        }
+      }
+
+      window.addEventListener('touchend', endJoy);
+      window.addEventListener('touchcancel', endJoy);
+
+      function handleJoy(t) {
+        if (!baseRect) return;
+        const cx = baseRect.left + baseRect.width / 2;
+        const cy = baseRect.top + baseRect.height / 2;
+        const maxR = baseRect.width / 2;
+        let dx = t.clientX - cx;
+        let dy = t.clientY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > maxR) {
+          dx = (dx / dist) * maxR;
+          dy = (dy / dist) * maxR;
+        }
+        if (joyThumb) {
+          joyThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+        touchJoystickInput.x = dx / maxR;
+        touchJoystickInput.y = dy / maxR;
+      }
+    }
+
+    function performPlayerAttack() {
+      if (!hasEquippedSword || isAttacking) return;
+      isAttacking = true;
+      attackTimer = 0.25;
+      playSwordSlashSound();
+
+      if (player3D.avatarModel && player3D.avatarModel.rightArmPivot) {
+        player3D.avatarModel.rightArmPivot.rotation.x = -Math.PI / 1.8;
+      }
+
+      Object.keys(remotePlayers).forEach(id => {
+        const rp = remotePlayers[id];
+        if (rp && rp.pos && player3D.pos.distanceTo(rp.pos) < 5.0) {
+          publishNetworkPacket({
+            type: 'hit',
+            targetId: id,
+            damage: 25,
+            senderName: currentAccount.username
+          });
+        }
+      });
+    }
+
+    function inGameLoop() {
+      const dt = 0.016;
+
+      if (!player3D.avatarModel || !player3D.avatarModel.root) {
+        if (gameRenderer && gameScene && gameCamera) {
+          gameRenderer.render(gameScene, gameCamera);
+        }
+        gameAnimationId = requestAnimationFrame(inGameLoop);
+        return;
+      }
+
+      let moveX = 0;
+      let moveZ = 0;
+
+      const isChatting = (document.activeElement === document.getElementById('ingame-chat-input'));
+      if (!isChatting) {
+        if (inputKeys.w) moveZ += 1;
+        if (inputKeys.s) moveZ -= 1;
+        if (inputKeys.a) moveX -= 1;
+        if (inputKeys.d) moveX += 1;
+
+        if (Math.abs(touchJoystickInput.x) > 0.1 || Math.abs(touchJoystickInput.y) > 0.1) {
+          moveX = touchJoystickInput.x;
+          moveZ = -touchJoystickInput.y;
+        }
+      }
+
+      const isMoving = (Math.abs(moveX) > 0.05 || Math.abs(moveZ) > 0.05);
+
+      if (isMoving) {
+        const forward = new THREE.Vector3(-Math.sin(cameraAngles.yaw), 0, -Math.cos(cameraAngles.yaw));
+        const right = new THREE.Vector3(Math.cos(cameraAngles.yaw), 0, -Math.sin(cameraAngles.yaw));
+
+        const moveDir = new THREE.Vector3()
+          .addScaledVector(forward, moveZ)
+          .addScaledVector(right, moveX)
+          .normalize();
+
+        const speed = adminSuperSpeed ? 36.0 : 13.5;
+        player3D.pos.x += moveDir.x * speed * dt;
+        player3D.pos.z += moveDir.z * speed * dt;
+        player3D.rotY = Math.atan2(moveDir.x, moveDir.z);
+
+        player3D.animCycle += dt * 14.0;
+        const swing = Math.sin(player3D.animCycle) * 0.7;
+        player3D.avatarModel.leftArmPivot.rotation.x = swing;
+        if (!isAttacking) player3D.avatarModel.rightArmPivot.rotation.x = -swing;
+        player3D.avatarModel.leftLegPivot.rotation.x = -swing;
+        player3D.avatarModel.rightLegPivot.rotation.x = swing;
+      } else {
+        player3D.avatarModel.leftArmPivot.rotation.x = 0;
+        if (!isAttacking) player3D.avatarModel.rightArmPivot.rotation.x = 0;
+        player3D.avatarModel.leftLegPivot.rotation.x = 0;
+        player3D.avatarModel.rightLegPivot.rotation.x = 0;
+      }
+
+      if (isAttacking) {
+        attackTimer -= dt;
+        if (attackTimer <= 0) {
+          isAttacking = false;
+          player3D.avatarModel.rightArmPivot.rotation.x = 0;
+        }
+      }
+
+      if (!adminFlyMode) {
+        player3D.vel.y -= 28.0 * dt;
+        player3D.pos.y += player3D.vel.y * dt;
+
+        if (player3D.pos.y <= 0) {
+          player3D.pos.y = 0;
+          player3D.vel.y = 0;
+          player3D.isGrounded = true;
+        }
+      }
+
+      if (player3D.pos.y < -30) {
+        player3D.pos.set(0, 10, 0);
+        player3D.vel.set(0, 0, 0);
+        playRetroOofSound();
+        showInGameChat('[BLOX2008]: OOF! Вы упали в пустоту!');
+      }
+
+      player3D.avatarModel.root.position.copy(player3D.pos);
+      player3D.avatarModel.root.rotation.y = player3D.rotY;
+
+      const target = new THREE.Vector3(player3D.pos.x, player3D.pos.y + 3.5, player3D.pos.z);
+      gameCamera.position.set(
+        target.x + cameraAngles.distance * Math.sin(cameraAngles.yaw) * Math.cos(cameraAngles.pitch),
+        target.y + cameraAngles.distance * Math.sin(cameraAngles.pitch),
+        target.z + cameraAngles.distance * Math.cos(cameraAngles.yaw) * Math.cos(cameraAngles.pitch)
+      );
+      gameCamera.lookAt(target);
+
+      // Synchronize remote players
+      const now = performance.now();
+      Object.keys(remotePlayers).forEach(id => {
+        const rp = remotePlayers[id];
+        if (Date.now() - rp.lastSeen > 8000) {
+          if (rp.model && rp.model.root && gameScene) gameScene.remove(rp.model.root);
+          delete remotePlayers[id];
+          updatePlayerCountDisplay();
+          return;
+        }
+        rp.pos.lerp(rp.targetPos, 0.25);
+        rp.rotY = THREE.MathUtils.lerp(rp.rotY, rp.targetRotY, 0.25);
+        if (rp.model && rp.model.root) {
+          rp.model.root.position.copy(rp.pos);
+          rp.model.root.rotation.y = rp.rotY;
+          if (rp.isMoving) {
+            rp.animCycle += dt * 14.0;
+            const sw = Math.sin(rp.animCycle) * 0.7;
+            rp.model.leftArmPivot.rotation.x = sw;
+            rp.model.rightArmPivot.rotation.x = -sw;
+            rp.model.leftLegPivot.rotation.x = -sw;
+            rp.model.rightLegPivot.rotation.x = sw;
+          } else {
+            rp.model.leftArmPivot.rotation.x = 0;
+            rp.model.rightArmPivot.rotation.x = 0;
+            rp.model.leftLegPivot.rotation.x = 0;
+            rp.model.rightLegPivot.rotation.x = 0;
+          }
+        }
+      });
+
+      if (now - lastNetworkMoveSync > 50 && activeNetworkRoomId) {
+        lastNetworkMoveSync = now;
+        publishNetworkPacket({
+          type: 'move',
+          senderId: clientSessionId,
+          username: currentAccount ? currentAccount.username : 'Player',
+          colors: currentAccount ? currentAccount.colors : null,
+          hatId: currentAccount ? currentAccount.equippedHat : null,
+          customFaceUrl: currentAccount ? currentAccount.customFaceUrl : null,
+          pos: { x: player3D.pos.x, y: player3D.pos.y, z: player3D.pos.z },
+          rotY: player3D.rotY,
+          isMoving: isMoving
+        });
+      }
+
+      if (gameRenderer && gameScene && gameCamera) {
+        gameRenderer.render(gameScene, gameCamera);
+      }
+      gameAnimationId = requestAnimationFrame(inGameLoop);
+    }
+
+    function updatePlayerCountDisplay() {
+      const el = document.getElementById('game-player-count');
+      if (el) el.textContent = Object.keys(remotePlayers).length + 1;
+    }
+
+    function updateOrCreateRemotePlayer(data) {
+      if (!gameScene || !data.senderId) return;
+      let rp = remotePlayers[data.senderId];
+      if (!rp) {
+        const model = build3DAvatarMesh(data.colors, data.hatId, data.customFaceUrl);
+        gameScene.add(model.root);
+        rp = {
+          id: data.senderId,
+          username: data.username || 'Player',
+          model: model,
+          pos: new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z),
+          targetPos: new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z),
+          rotY: data.rotY || 0,
+          targetRotY: data.rotY || 0,
+          animCycle: 0,
+          isMoving: false,
+          lastSeen: Date.now()
+        };
+        remotePlayers[data.senderId] = rp;
+        updatePlayerCountDisplay();
+      } else {
+        rp.targetPos.set(data.pos.x, data.pos.y, data.pos.z);
+        rp.targetRotY = data.rotY || 0;
+        rp.isMoving = !!data.isMoving;
+        rp.lastSeen = Date.now();
+      }
+    }
+
+    function updateHPBarHUD() {
+      const bar = document.getElementById('ingame-hp-bar');
+      const text = document.getElementById('ingame-hp-text');
+      if (bar) bar.style.width = Math.max(0, Math.min(100, playerHealth)) + '%';
+      if (text) text.textContent = playerHealth;
+    }
+
+    function selectHotbarSlot(slotNum) {
+      if (slotNum === 1) {
+        if (!hasEquippedSword) {
+          showToast('Инвентарь пуст! Меч может выдать только Администратор.');
+          return;
+        }
+        if (!swordMeshInstance) return;
+        swordMeshInstance.visible = !swordMeshInstance.visible;
+        const slotEl = document.getElementById('hotbar-slot-1');
+        if (swordMeshInstance.visible) {
+          slotEl?.classList.add('border-yellow-400');
+          showToast('Classic Sword взят в руку!');
+        } else {
+          slotEl?.classList.remove('border-yellow-400');
+          showToast('Classic Sword убран в рюкзак');
+        }
+      }
+    }
+
+    function joinGameServer(roomId) {
+      if (currentAccount && checkActiveBanForUser(currentAccount.username)) {
+        verifyCurrentAccountBanState();
+        return;
+      }
+
+      const server = getAllServers().find(s => s.roomId === roomId);
+      if (!server) return;
+
+      document.getElementById('screen-3d-game').classList.remove('hidden');
+      document.getElementById('game-map-name').textContent = server.place;
+      document.getElementById('game-titlebar').textContent = `ROBLOX 3D — ${server.name}`;
+
+      playerHealth = 100;
+      updateHPBarHUD();
+
+      // Reset starting inventory: always spawn empty-handed
+      hasEquippedSword = false;
+      const slotEl = document.getElementById('hotbar-slot-1');
+      if (slotEl) {
+        slotEl.className = 'w-14 h-14 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 opacity-40 rounded flex flex-col items-center justify-center cursor-pointer shadow-lg active:scale-95 transition-transform text-white';
+        slotEl.innerHTML = `<span class="text-lg">🗡️</span><span class="text-[9px] font-bold">Пусто [1]</span>`;
+      }
+
+      init3DGameWorld(server.place, server.customParts || null);
+      setupInGameInputListeners();
+      connectToNetworkRoom(roomId);
+
+      if (gameAnimationId) cancelAnimationFrame(gameAnimationId);
+      gameAnimationId = requestAnimationFrame(inGameLoop);
+
+      setTimeout(() => {
+        document.getElementById('three-viewport')?.focus();
+      }, 100);
+    }
+
+    function startSoloPlay() {
+      joinGameServer('blox-crossroads-public');
+      showToast('Запущен режим одиночного тестирования!');
+    }
+
+    function exit3DGame() {
+      if (gameAnimationId) {
+        cancelAnimationFrame(gameAnimationId);
+        gameAnimationId = null;
+      }
+      disconnectFromNetworkRoom();
+      document.getElementById('screen-3d-game').classList.add('hidden');
+      switchTab('games');
+    }
+
+    function connectToNetworkRoom(roomId) {
+      activeNetworkRoomId = roomId;
+      remotePlayers = {};
+      updatePlayerCountDisplay();
+
+      try {
+        if (typeof mqtt !== 'undefined') {
+          mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+            clientId: 'blox_' + clientSessionId,
+            keepalive: 60,
+            clean: true
+          });
+
+          mqttClient.on('connect', () => {
+            const topic = 'blox2008/rooms/' + roomId;
+            mqttClient.subscribe(topic);
+            showInGameChat(`[BLOX2008]: Подключено к сетевой комнате ${roomId}!`);
+            playRetroJumpSound();
+          });
+
+          mqttClient.on('message', (topic, payload) => {
+            try {
+              const data = JSON.parse(payload.toString());
+              if (data.senderId === clientSessionId) return;
+
+              if (data.type === 'move') {
+                updateOrCreateRemotePlayer(data);
+              } else if (data.type === 'chat') {
+                showInGameChat(`[${escapeHtml(data.senderName)}]: ${escapeHtml(data.text)}`);
+                playChatBlipSound();
+              } else if (data.type === 'hit' && data.targetId === clientSessionId) {
+                if (!adminGodMode) {
+                  playerHealth = Math.max(0, playerHealth - data.damage);
+                  updateHPBarHUD();
+                  playRetroOofSound();
+                  showInGameChat(`[Урон]: Вас ударил ${escapeHtml(data.senderName)} (-${data.damage} HP)!`);
+
+                  if (playerHealth <= 0) {
+                    player3D.pos.set(0, 10, 0);
+                    player3D.vel.set(0, 0, 0);
+                    playerHealth = 100;
+                    updateHPBarHUD();
+                    showInGameChat(`[Респавн]: OOF! Вы возродились!`);
+                  }
+                }
+              }
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    }
+
+    function disconnectFromNetworkRoom() {
+      if (mqttClient) {
+        try { mqttClient.end(); } catch (e) {}
+        mqttClient = null;
+      }
+      activeNetworkRoomId = null;
+      remotePlayers = {};
+    }
+
+    function publishNetworkPacket(data) {
+      if (mqttClient && mqttClient.connected && activeNetworkRoomId) {
+        mqttClient.publish('blox2008/rooms/' + activeNetworkRoomId, JSON.stringify(data));
+      }
+    }
+
+    function showInGameChat(msg) {
+      const log = document.getElementById('ingame-chat-log');
+      if (!log) return;
+      const d = document.createElement('div');
+      d.innerHTML = msg;
+      log.appendChild(d);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const inp = document.getElementById('ingame-chat-input');
+      const text = inp ? inp.value.trim() : '';
+      if (!text) return;
+      inp.value = '';
+      inp.blur();
+      document.getElementById('three-viewport')?.focus();
+
+      if (text.startsWith('/')) {
+        handleInGameAdminCommand(text);
+        return;
+      }
+
+      showInGameChat(`[${escapeHtml(currentAccount.username)}]: ${escapeHtml(text)}`);
+      playChatBlipSound();
+
+      publishNetworkPacket({
+        type: 'chat',
+        senderId: clientSessionId,
+        senderName: currentAccount.username,
+        text: text
+      });
+    }
+
+    function handleInGameAdminCommand(cmd) {
+      const parts = cmd.split(' ');
+      const action = parts[0].toLowerCase();
+
+      if (action === '/god') {
+        if (!isCurrentAccountAdmin()) return showToast('Требуются права админа!');
+        toggleAdminGodMode();
+      } else if (action === '/fly') {
+        if (!isCurrentAccountAdmin()) return showToast('Требуются права админа!');
+        toggleAdminFlyMode();
+      } else if (action === '/speed') {
+        if (!isCurrentAccountAdmin()) return showToast('Требуются права админа!');
+        toggleAdminSpeed();
+      } else if (action === '/give') {
+        giveAdminSword();
+      } else {
+        showToast('Неизвестная команда!');
+      }
+    }
+
+    function openMobileChatPrompt() {
+      const text = prompt('Введите сообщение в чат:');
+      if (text && text.trim().length > 0) {
+        document.getElementById('ingame-chat-input').value = text;
+        sendChatMessage();
+      }
+    }
+
+    let studioScene, studioCamera, studioRenderer;
+    let studioAnimationId = null;
+    let studioParts = [];
+    let selectedStudioPart = null;
+    let studioBaseplate = null;
+    let isBaseplateLocked = true;
+    let activeStudioTool = 'select'; // 'select', 'move', 'stretch', 'rotate'
+    let studioSelectionHelper = null;
+
+    // Mouse Dragging State for Studio
+    let isDraggingPart = false;
+    let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let dragPlaneIntersect = new THREE.Vector3();
+    let dragOffset = new THREE.Vector3();
+    let isStudioOrbiting = false;
+    let studioPrevMouseX = 0;
+    let studioPrevMouseY = 0;
+    let studioCamAngles = { yaw: 0.78, pitch: 0.65, distance: 75 };
+
+    function initStudioEditor() {
+      const container = document.getElementById('studio-canvas-container');
+      if (!container) return;
+      const w = container.clientWidth || 600;
+      const h = container.clientHeight || 540;
+
+      if (!studioScene) {
+        studioScene = new THREE.Scene();
+        studioScene.background = new THREE.Color(0xa0c4e8);
+
+        studioCamera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000);
+        updateStudioCameraPosition();
+
+        const canvas = document.getElementById('studio-viewport');
+        studioRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        studioRenderer.setSize(w, h);
+        studioRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.85);
+        studioScene.add(amb);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.65);
+        sun.position.set(40, 80, 40);
+        studioScene.add(sun);
+
+        createStudioBaseplate();
+        setupStudioInteractions();
+      } else {
+        studioRenderer.setSize(w, h);
+        studioCamera.aspect = w / h;
+        studioCamera.updateProjectionMatrix();
+      }
+
+      if (studioAnimationId) cancelAnimationFrame(studioAnimationId);
+      function studioLoop() {
+        if (studioSelectionHelper && selectedStudioPart) {
+          studioSelectionHelper.update();
+        }
+        if (studioRenderer && studioScene && studioCamera) {
+          studioRenderer.render(studioScene, studioCamera);
+        }
+        studioAnimationId = requestAnimationFrame(studioLoop);
+      }
+      studioAnimationId = requestAnimationFrame(studioLoop);
+    }
+
+    function updateStudioCameraPosition() {
+      const target = new THREE.Vector3(0, 5, 0);
+      studioCamera.position.set(
+        target.x + studioCamAngles.distance * Math.sin(studioCamAngles.yaw) * Math.cos(studioCamAngles.pitch),
+        target.y + studioCamAngles.distance * Math.sin(studioCamAngles.pitch),
+        target.z + studioCamAngles.distance * Math.cos(studioCamAngles.yaw) * Math.cos(studioCamAngles.pitch)
+      );
+      studioCamera.lookAt(target);
+    }
+
+    function createStudioBaseplate() {
+      const baseplateMat = createClassicPlasticMaterial('#228b22', 20, 20);
+      studioBaseplate = new THREE.Mesh(new THREE.BoxGeometry(120, 2, 120), baseplateMat);
+      studioBaseplate.position.set(0, -1, 0);
+      studioBaseplate.userData = { isBaseplate: true, name: 'Baseplate', w: 120, h: 2, d: 120, color: '#228b22' };
+      studioScene.add(studioBaseplate);
+    }
+
+    function toggleStudioBaseplateLock(locked) {
+      isBaseplateLocked = locked;
+      const label = document.getElementById('studio-baseplate-label');
+      if (label) {
+        label.textContent = locked ? '🔒 База заблокирована' : '🔓 База разблокирована';
+      }
+      showToast(locked ? 'Baseplate заблокирован' : 'Baseplate разблокирован: теперь его можно выделять, красить и удалять!');
+    }
+
+    function setStudioTool(tool) {
+      activeStudioTool = tool;
+      ['select', 'move', 'stretch', 'rotate'].forEach(t => {
+        const btn = document.getElementById('tool-btn-' + t);
+        if (btn) {
+          if (t === tool) {
+            btn.classList.add('studio-tool-active');
+          } else {
+            btn.classList.remove('studio-tool-active');
+          }
+        }
+      });
+
+      const hints = {
+        select: 'Выделение объектов кликом',
+        move: 'Зажмите ЛКМ на парте для свободного перемещения по сетке',
+        stretch: 'Растягивание размеров парта кнопками в инспекторе',
+        rotate: 'Поворот парта вокруг осей в инспекторе'
+      };
+      document.getElementById('studio-current-tool-hint').textContent = hints[tool] || '';
+      showToast(`Выбран инструмент: ${tool.toUpperCase()}`);
+    }
+
+    function insertStudioPart(shape = 'block') {
+      let geo;
+      if (shape === 'block') geo = new THREE.BoxGeometry(4, 2, 4);
+      else if (shape === 'cylinder') geo = new THREE.CylinderGeometry(2, 2, 4, 16);
+      else if (shape === 'sphere') geo = new THREE.SphereGeometry(2, 16, 16);
+      else if (shape === 'wedge') geo = new THREE.BoxGeometry(4, 2, 4);
+
+      const color = '#facc15';
+      const mat = createClassicPlasticMaterial(color, 2, 2);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(0, 1, 0);
+      mesh.userData = {
+        name: `Part_${studioParts.length + 1}`,
+        color: color,
+        shape: shape,
+        w: 4, h: 2, d: 4
+      };
+
+      studioScene.add(mesh);
+      studioParts.push(mesh);
+      selectStudioPart(mesh);
+      showToast('Парт добавлен в сцену!');
+    }
+
+    function duplicateSelectedStudioPart() {
+      if (!selectedStudioPart) {
+        showToast('Сначала выберите парт для дублирования!');
+        return;
+      }
+      if (selectedStudioPart === studioBaseplate) {
+        showToast('Нельзя клонировать Baseplate!');
+        return;
+      }
+
+      const p = selectedStudioPart;
+      const cloneGeo = p.geometry.clone();
+      const cloneMat = createClassicPlasticMaterial(p.userData.color || '#facc15', 2, 2);
+      const cloneMesh = new THREE.Mesh(cloneGeo, cloneMat);
+
+      cloneMesh.position.copy(p.position).add(new THREE.Vector3(2, 0, 2));
+      cloneMesh.rotation.copy(p.rotation);
+      cloneMesh.scale.copy(p.scale);
+      cloneMesh.userData = { ...p.userData, name: p.userData.name + '_Copy' };
+
+      studioScene.add(cloneMesh);
+      studioParts.push(cloneMesh);
+      selectStudioPart(cloneMesh);
+      showToast('Парт скопирован!');
+    }
+
+    function selectStudioPart(mesh) {
+      if (studioSelectionHelper) {
+        studioScene.remove(studioSelectionHelper);
+        studioSelectionHelper = null;
+      }
+
+      selectedStudioPart = mesh;
+
+      if (mesh) {
+        studioSelectionHelper = new THREE.BoxHelper(mesh, 0x00ffff);
+        studioScene.add(studioSelectionHelper);
+        renderStudioInspector(mesh);
+      } else {
+        document.getElementById('studio-inspector-content').innerHTML = `
+          <div class="text-slate-500 text-[11px]">Нажмите на любой парт или Baseplate для редактирования.</div>
+        `;
+      }
+    }
+
+    function renderStudioInspector(mesh) {
+      const container = document.getElementById('studio-inspector-content');
+      if (!container || !mesh) return;
+
+      const isBp = mesh.userData.isBaseplate;
+      container.innerHTML = `
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between border-b pb-1">
+            <span class="font-bold text-blue-900">${escapeHtml(mesh.userData.name || 'Объект')}</span>
+            <span class="text-[10px] text-slate-500 font-mono">X:${mesh.position.x.toFixed(1)} Y:${mesh.position.y.toFixed(1)} Z:${mesh.position.z.toFixed(1)}</span>
+          </div>
+          
+          <div>
+            <label class="block font-bold text-slate-700 text-[10px] mb-1">Цвет парта (Classic 2008 Palette):</label>
+            <div class="grid grid-cols-6 gap-1 mb-1.5">
+              <button onclick="changeStudioPartColor('#f3c742')" class="w-full h-5 rounded border border-black/30" style="background:#f3c742" title="Bright Yellow"></button>
+              <button onclick="changeStudioPartColor('#0d69ac')" class="w-full h-5 rounded border border-black/30" style="background:#0d69ac" title="Bright Blue"></button>
+              <button onclick="changeStudioPartColor('#dc2626')" class="w-full h-5 rounded border border-black/30" style="background:#dc2626" title="Bright Red"></button>
+              <button onclick="changeStudioPartColor('#228b22')" class="w-full h-5 rounded border border-black/30" style="background:#228b22" title="Dark Green"></button>
+              <button onclick="changeStudioPartColor('#1e293b')" class="w-full h-5 rounded border border-black/30" style="background:#1e293b" title="Dark Slate"></button>
+              <button onclick="changeStudioPartColor('#e2e8f0')" class="w-full h-5 rounded border border-black/30" style="background:#e2e8f0" title="White"></button>
+            </div>
+            <input type="color" value="${mesh.userData.color || '#facc15'}" onchange="changeStudioPartColor(this.value)" class="w-full h-6 border rounded cursor-pointer p-0">
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-700 text-[10px]">Вращение (Rotate):</label>
+            <div class="grid grid-cols-3 gap-1">
+              <button onclick="rotateSelectedStudioPart('y', 45)" class="retro-btn py-1 text-[10px] font-bold">Y +45°</button>
+              <button onclick="rotateSelectedStudioPart('y', -45)" class="retro-btn py-1 text-[10px] font-bold">Y -45°</button>
+              <button onclick="rotateSelectedStudioPart('x', 90)" class="retro-btn py-1 text-[10px] font-bold">X +90°</button>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-700 text-[10px]">Растянуть (Stretch):</label>
+            <div class="grid grid-cols-3 gap-1">
+              <button onclick="stretchSelectedStudioPart('x', 2)" class="retro-btn py-0.5 text-[10px]">X +2</button>
+              <button onclick="stretchSelectedStudioPart('y', 2)" class="retro-btn py-0.5 text-[10px]">Y +2</button>
+              <button onclick="stretchSelectedStudioPart('z', 2)" class="retro-btn py-0.5 text-[10px]">Z +2</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1 mt-0.5">
+              <button onclick="stretchSelectedStudioPart('x', -2)" class="retro-btn py-0.5 text-[10px]">X -2</button>
+              <button onclick="stretchSelectedStudioPart('y', -2)" class="retro-btn py-0.5 text-[10px]">Y -2</button>
+              <button onclick="stretchSelectedStudioPart('z', -2)" class="retro-btn py-0.5 text-[10px]">Z -2</button>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-700 text-[10px]">Сдвинуть по координатам:</label>
+            <div class="grid grid-cols-4 gap-1">
+              <button onclick="nudgeSelectedPart('x', 2)" class="retro-btn py-0.5 text-[10px] font-bold">+X</button>
+              <button onclick="nudgeSelectedPart('x', -2)" class="retro-btn py-0.5 text-[10px] font-bold">-X</button>
+              <button onclick="nudgeSelectedPart('z', 2)" class="retro-btn py-0.5 text-[10px] font-bold">+Z</button>
+              <button onclick="nudgeSelectedPart('z', -2)" class="retro-btn py-0.5 text-[10px] font-bold">-Z</button>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200">
+            <button onclick="deleteSelectedStudioPart()" class="retro-btn-red w-full py-1 text-xs rounded font-bold">
+              ${isBp ? 'Удалить Baseplate' : 'Удалить парт'}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function changeStudioPartColor(hex) {
+      if (!selectedStudioPart) return;
+      selectedStudioPart.material = createClassicPlasticMaterial(hex, 2, 2);
+      selectedStudioPart.userData.color = hex;
+      renderStudioInspector(selectedStudioPart);
+    }
+
+    function rotateSelectedStudioPart(axis, deg) {
+      if (!selectedStudioPart) return;
+      const rad = deg * (Math.PI / 180);
+      if (axis === 'y') selectedStudioPart.rotation.y += rad;
+      if (axis === 'x') selectedStudioPart.rotation.x += rad;
+      if (axis === 'z') selectedStudioPart.rotation.z += rad;
+      if (studioSelectionHelper) studioSelectionHelper.update();
+    }
+
+    function stretchSelectedStudioPart(axis, delta) {
+      if (!selectedStudioPart) return;
+      if (axis === 'x') {
+        selectedStudioPart.scale.x = Math.max(0.25, selectedStudioPart.scale.x + delta * 0.25);
+        selectedStudioPart.userData.w = (selectedStudioPart.userData.w || 4) + delta;
+      } else if (axis === 'y') {
+        selectedStudioPart.scale.y = Math.max(0.25, selectedStudioPart.scale.y + delta * 0.25);
+        selectedStudioPart.userData.h = (selectedStudioPart.userData.h || 2) + delta;
+      } else if (axis === 'z') {
+        selectedStudioPart.scale.z = Math.max(0.25, selectedStudioPart.scale.z + delta * 0.25);
+        selectedStudioPart.userData.d = (selectedStudioPart.userData.d || 4) + delta;
+      }
+      if (studioSelectionHelper) studioSelectionHelper.update();
+    }
+
+    function nudgeSelectedPart(axis, dist) {
+      if (!selectedStudioPart) return;
+      if (axis === 'x') selectedStudioPart.position.x += dist;
+      if (axis === 'z') selectedStudioPart.position.z += dist;
+      if (studioSelectionHelper) studioSelectionHelper.update();
+      renderStudioInspector(selectedStudioPart);
+    }
+
+    function deleteSelectedStudioPart() {
+      if (!selectedStudioPart) {
+        showToast('Сначала выберите парт для удаления!');
+        return;
+      }
+      if (selectedStudioPart === studioBaseplate && isBaseplateLocked) {
+        showToast('Baseplate заблокирован! Снимите галочку «База заблокирована».');
+        return;
+      }
+
+      studioScene.remove(selectedStudioPart);
+      studioParts = studioParts.filter(p => p !== selectedStudioPart);
+      if (selectedStudioPart === studioBaseplate) {
+        studioBaseplate = null;
+      }
+      selectStudioPart(null);
+      showToast('Парт удален из сцены!');
+    }
+
+    function setupStudioInteractions() {
+      const canvas = document.getElementById('studio-viewport');
+      if (!canvas) return;
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        if (e.button === 2) {
+          isStudioOrbiting = true;
+          studioPrevMouseX = e.clientX;
+          studioPrevMouseY = e.clientY;
+          return;
+        }
+
+        if (e.button === 0) {
+          raycaster.setFromCamera(mouse, studioCamera);
+          const interactables = [...studioParts];
+          if (studioBaseplate && !isBaseplateLocked) interactables.push(studioBaseplate);
+
+          const hits = raycaster.intersectObjects(interactables, true);
+          if (hits.length > 0) {
+            const hitObj = hits[0].object;
+            selectStudioPart(hitObj);
+
+            if (activeStudioTool === 'move' || activeStudioTool === 'select') {
+              isDraggingPart = true;
+              dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), hitObj.position);
+              raycaster.ray.intersectPlane(dragPlane, dragPlaneIntersect);
+              dragOffset.copy(hitObj.position).sub(dragPlaneIntersect);
+              document.getElementById('studio-drag-indicator')?.classList.remove('hidden');
+            }
+          } else {
+            selectStudioPart(null);
+          }
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isStudioOrbiting) {
+          const dx = e.clientX - studioPrevMouseX;
+          const dy = e.clientY - studioPrevMouseY;
+          studioPrevMouseX = e.clientX;
+          studioPrevMouseY = e.clientY;
+
+          studioCamAngles.yaw -= dx * 0.008;
+          studioCamAngles.pitch += dy * 0.008;
+          studioCamAngles.pitch = Math.max(0.1, Math.min(1.4, studioCamAngles.pitch));
+          updateStudioCameraPosition();
+          return;
+        }
+
+        if (isDraggingPart && selectedStudioPart) {
+          const rect = canvas.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, studioCamera);
+          if (raycaster.ray.intersectPlane(dragPlane, dragPlaneIntersect)) {
+            const newPos = dragPlaneIntersect.add(dragOffset);
+            selectedStudioPart.position.x = Math.round(newPos.x / 2) * 2;
+            selectedStudioPart.position.z = Math.round(newPos.z / 2) * 2;
+
+            if (studioSelectionHelper) studioSelectionHelper.update();
+            renderStudioInspector(selectedStudioPart);
+          }
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        isStudioOrbiting = false;
+        if (isDraggingPart) {
+          isDraggingPart = false;
+          document.getElementById('studio-drag-indicator')?.classList.add('hidden');
+        }
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        studioCamAngles.distance += e.deltaY * 0.05;
+        studioCamAngles.distance = Math.max(10, Math.min(180, studioCamAngles.distance));
+        updateStudioCameraPosition();
+      });
+    }
+
+    function spawnToolboxItem(type) {
+      if (type === 'tree') {
+        const trunk = createBlockObstacle(0, 4, 0, 2, 8, 2, 0x78350f, studioScene);
+        trunk.userData = { name: 'Tree_Trunk', color: '#78350f', w: 2, h: 8, d: 2 };
+        const leaves = createBlockObstacle(0, 10, 0, 8, 6, 8, 0x15803d, studioScene);
+        leaves.userData = { name: 'Tree_Leaves', color: '#15803d', w: 8, h: 6, d: 8 };
+        studioParts.push(trunk, leaves);
+        selectStudioPart(leaves);
+      } else if (type === 'tower') {
+        const tower = createBlockObstacle(0, 10, 0, 8, 20, 8, 0x334155, studioScene);
+        tower.userData = { name: 'Watch_Tower', color: '#334155', w: 8, h: 20, d: 8 };
+        studioParts.push(tower);
+        selectStudioPart(tower);
+      } else if (type === 'spawn') {
+        const sp = createBlockObstacle(0, 0.5, 0, 6, 1, 6, 0x22c55e, studioScene);
+        sp.userData = { name: 'SpawnPoint', color: '#22c55e', w: 6, h: 1, d: 6 };
+        studioParts.push(sp);
+        selectStudioPart(sp);
+      } else if (type === 'jumppad') {
+        const pad = createBlockObstacle(0, 0.5, 0, 5, 1, 5, 0xeab308, studioScene);
+        pad.userData = { name: 'JumpPad', color: '#eab308', w: 5, h: 1, d: 5 };
+        studioParts.push(pad);
+        selectStudioPart(pad);
+      } else if (type === 'bridge') {
+        const b = createBlockObstacle(0, 4, 0, 6, 1, 24, 0x92400e, studioScene);
+        b.userData = { name: 'Wood_Bridge', color: '#92400e', w: 6, h: 1, d: 24 };
+        studioParts.push(b);
+        selectStudioPart(b);
+      } else if (type === 'campfire') {
+        const fire = createBlockObstacle(0, 1, 0, 3, 2, 3, 0xef4444, studioScene);
+        fire.userData = { name: 'Campfire', color: '#ef4444', w: 3, h: 2, d: 3 };
+        studioParts.push(fire);
+        selectStudioPart(fire);
+      } else if (type === 'wall') {
+        const wall = createBlockObstacle(0, 4, 0, 16, 8, 2, 0xdc2626, studioScene);
+        wall.userData = { name: 'BrickWall', color: '#dc2626', w: 16, h: 8, d: 2 };
+        studioParts.push(wall);
+        selectStudioPart(wall);
+      }
+      showToast('Модель добавлена в Studio!');
+    }
+
+    function playSoloStudio() {
+      const serializedParts = studioParts.map(p => ({
+        x: p.position.x,
+        y: p.position.y,
+        z: p.position.z,
+        w: (p.userData.w || 4) * p.scale.x,
+        h: (p.userData.h || 2) * p.scale.y,
+        d: (p.userData.d || 4) * p.scale.z,
+        color: p.userData.color || '#facc15'
+      }));
+
+      document.getElementById('screen-3d-game').classList.remove('hidden');
+      document.getElementById('game-map-name').textContent = 'Studio Test (Play Solo)';
+      document.getElementById('game-titlebar').textContent = `ROBLOX 3D — Solo Studio Test`;
+
+      playerHealth = 100;
+      updateHPBarHUD();
+      hasEquippedSword = false;
+
+      init3DGameWorld('Studio Solo', serializedParts);
+      setupInGameInputListeners();
+
+      if (gameAnimationId) cancelAnimationFrame(gameAnimationId);
+      gameAnimationId = requestAnimationFrame(inGameLoop);
+
+      setTimeout(() => {
+        document.getElementById('three-viewport')?.focus();
+      }, 100);
+      showToast('Тестирование карты запущено!');
+    }
+
+    function openPublishMapModal() {
+      document.getElementById('modal-publish-map')?.classList.remove('hidden');
+      document.getElementById('modal-publish-map')?.classList.add('flex');
+    }
+
+    function closePublishMapModal() {
+      document.getElementById('modal-publish-map')?.classList.add('hidden');
+      document.getElementById('modal-publish-map')?.classList.remove('flex');
+    }
+
+    function handlePublishMapSubmit(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('pub-map-name').value.trim();
+      const desc = document.getElementById('pub-map-desc').value.trim();
+
+      if (!name) {
+        showToast('Введите название карты!');
+        return;
+      }
+
+      const serializedParts = studioParts.map(p => ({
+        x: p.position.x,
+        y: p.position.y,
+        z: p.position.z,
+        w: (p.userData.w || 4) * p.scale.x,
+        h: (p.userData.h || 2) * p.scale.y,
+        d: (p.userData.d || 4) * p.scale.z,
+        color: p.userData.color || '#facc15'
+      }));
+
+      const newPlace = {
+        roomId: 'custom_' + Date.now(),
+        name: name,
+        place: 'Custom Studio Map',
+        author: currentAccount.username,
+        desc: desc || 'Карта создана в Studio 2008',
+        customParts: serializedParts,
+        isCustom: true
+      };
+
+      publishedServers.unshift(newPlace);
+      saveCustomServers();
+      closePublishMapModal();
+      showToast(`Карта «${name}» успешно опубликована в BLOX2008!`);
+      renderServerList();
+      switchTab('games');
+
+      broadcastGlobalNetworkEvent('blox2008/games/global', {
+        type: 'server_new',
+        server: newPlace
+      });
+    }
+
+    let globalNetworkClient = null;
+
+    function initGlobalDirectoryNetwork() {
+      try {
+        if (typeof mqtt !== 'undefined') {
+          globalNetworkClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+            clientId: 'blox_global_' + Math.random().toString(36).substr(2, 9),
+            keepalive: 60,
+            clean: true
+          });
+
+          globalNetworkClient.on('connect', () => {
+            globalNetworkClient.subscribe('blox2008/games/global');
+            globalNetworkClient.subscribe('blox2008/catalog/global');
+            globalNetworkClient.subscribe('blox2008/forum/global');
+            globalNetworkClient.subscribe('blox2008/admin/bans');
+          });
+
+          globalNetworkClient.on('message', (topic, payload) => {
+            try {
+              const data = JSON.parse(payload.toString());
+              if (topic === 'blox2008/games/global') {
+                if (data.type === 'server_new' && data.server) {
+                  if (!publishedServers.some(s => s.roomId === data.server.roomId)) {
+                    publishedServers.unshift(data.server);
+                    saveCustomServers();
+                    renderServerList();
+                  }
+                } else if (data.type === 'server_deleted' && data.roomId) {
+                  publishedServers = publishedServers.filter(s => s.roomId !== data.roomId);
+                  saveCustomServers();
+                  renderServerList();
+                }
+              } else if (topic === 'blox2008/catalog/global') {
+                if (data.type === 'catalog_item_new' && data.item) {
+                  if (!customClothingItems.some(i => i.id === data.item.id)) {
+                    customClothingItems.unshift(data.item);
+                    saveCustomClothing();
+                    renderCatalog();
+                  }
+                } else if (data.type === 'catalog_item_deleted' && data.itemId) {
+                  customClothingItems = customClothingItems.filter(i => i.id !== data.itemId);
+                  saveCustomClothing();
+                  renderCatalog();
+                }
+              } else if (topic === 'blox2008/forum/global') {
+                if (data.type === 'forum_thread_new' && data.thread) {
+                  if (!forumThreads.some(t => t.id === data.thread.id)) {
+                    forumThreads.unshift(data.thread);
+                    saveForumPosts();
+                    renderForumThreads();
+                  }
+                } else if (data.type === 'forum_thread_deleted' && data.threadId) {
+                  forumThreads = forumThreads.filter(t => t.id !== data.threadId);
+                  saveForumPosts();
+                  if (currentViewingThread && currentViewingThread.id === data.threadId) {
+                    closeThreadDetail();
+                  }
+                  renderForumThreads();
+                }
+              } else if (topic === 'blox2008/admin/bans') {
+                if (data.type === 'player_banned' && data.ban) {
+                  activeBansList = activeBansList.filter(b => b.username.toLowerCase() !== data.ban.username.toLowerCase());
+                  activeBansList.push(data.ban);
+                  saveBansList();
+                  renderAdminBansList();
+                  verifyCurrentAccountBanState();
+                } else if (data.type === 'player_unbanned' && data.username) {
+                  activeBansList = activeBansList.filter(b => b.username.toLowerCase() !== data.username.toLowerCase());
+                  saveBansList();
+                  renderAdminBansList();
+                  verifyCurrentAccountBanState();
+                }
+              }
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    }
+
+    function broadcastGlobalNetworkEvent(topic, data) {
+      if (globalNetworkClient && globalNetworkClient.connected) {
+        globalNetworkClient.publish(topic, JSON.stringify(data));
+      }
+    }
+
+    window.addEventListener('load', () => {
+      loadAdminList();
+      loadBansList();
+      initAccountSystem();
+      loadCustomServers();
+      loadCustomClothing();
+      loadForumPosts();
+      renderServerList();
+      renderCatalog();
+      renderForumThreads();
+      initGlobalDirectoryNetwork();
+    });
+  </script>
+</body>
+</html>
