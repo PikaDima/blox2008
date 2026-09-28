@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BLOX2008 — Retro 3D Multiplayer Platform & Studio</title>
+  <title>BLOX2008 — Retro 3D Multiplayer Platform & Studio (Lua & Models)</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -217,6 +217,16 @@
       color: #1e3a8a !important;
       font-weight: 800 !important;
     }
+
+    /* Script Editor Styling */
+    .lua-code-editor {
+      font-family: 'Consolas', 'Courier New', Courier, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      tab-size: 2;
+      background-color: #1e1e2e;
+      color: #cdd6f4;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -268,7 +278,7 @@
       <div class="max-w-6xl w-full mx-auto flex justify-between items-center">
         <span class="flex items-center gap-1.5 font-sans">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <b>BLOX2008</b> — Официальная ретро-платформа с мультиплеером и Studio
+          <b>BLOX2008</b> — Официальная ретро-платформа с мультиплеером, Studio, Models и скриптами Lua
         </span>
         <div class="flex items-center space-x-3" id="topbar-user-area"></div>
       </div>
@@ -288,7 +298,7 @@
             </div>
           </div>
           <span class="bg-emerald-600 text-white text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded shadow">
-            Online v3.0
+            Online v4.0 (Lua)
           </span>
         </div>
 
@@ -340,7 +350,7 @@
             Catalog (Каталог)
           </button>
           <button id="tab-btn-studio" onclick="switchTab('studio')" class="nav-tab whitespace-nowrap">
-            Studio (Создать игру)
+            Studio (Создать игру & Lua)
           </button>
           <button id="tab-btn-forum" onclick="switchTab('forum')" class="nav-tab whitespace-nowrap">
             Forum (Форум)
@@ -362,7 +372,7 @@
           <span id="breadcrumb" class="font-semibold">Games &raquo; Список 3D миров</span>
         </div>
         <div class="text-[11px] text-slate-700 flex items-center gap-2">
-          <span>Связь: <b class="text-emerald-700 font-bold">EMQX MQTT Relay (Синхронизация игр, каталога и банов)</b></span>
+          <span>Связь: <b class="text-emerald-700 font-bold">EMQX MQTT Relay (Синхронизация игр, коллизий и Lua скриптов)</b></span>
         </div>
       </div>
     </div>
@@ -404,7 +414,7 @@
                 • <b>ПРОБЕЛ</b> — прыжок<br>
                 • <b>Зажатие ЛКМ</b> — поворот камеры<br>
                 • <b>Колесо мыши</b> — зум<br>
-                • <b>Клик ЛКМ</b> — взмах мечом (если выдан админом)<br>
+                • <b>Клик ЛКМ</b> — взмах мечом (если выдан)<br>
                 • <b>ENTER</b> — открыть/отправить чат<br>
                 • На смартфонах доступен сенсорный джойстик и прыжок.
               </p>
@@ -437,7 +447,7 @@
         <div id="catalog-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
       </section>
 
-      <!-- 3. STUDIO TAB (FULLY FUNCTIONAL BUILDER 2008) -->
+      <!-- 3. STUDIO TAB (FULLY FUNCTIONAL BUILDER 2008 WITH LUA & MODELS & CANCOLLIDE) -->
       <section id="view-studio" class="tab-view hidden">
         <div class="retro-box p-2 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs bg-gradient-to-b from-[#f0f5fb] to-[#d8e7f5]">
           <div class="flex items-center gap-2 flex-wrap">
@@ -447,19 +457,19 @@
 
             <!-- Tool Selection Group -->
             <div class="flex items-center gap-1 bg-white p-1 border rounded shadow-sm">
-              <button onclick="setStudioTool('select')" id="tool-btn-select" class="retro-btn px-2.5 py-1 text-xs studio-tool-active">
+              <button onclick="setStudioTool('select')" id="tool-btn-select" class="retro-btn px-2.5 py-1 text-xs studio-tool-active" title="Выделение кликом">
                 👆 Выделить
               </button>
-              <button onclick="setStudioTool('move')" id="tool-btn-move" class="retro-btn px-2.5 py-1 text-xs">
+              <button onclick="setStudioTool('move')" id="tool-btn-move" class="retro-btn px-2.5 py-1 text-xs" title="Перемещение по сетке">
                 ✋ Двигать мышью
               </button>
-              <button onclick="setStudioTool('stretch')" id="tool-btn-stretch" class="retro-btn px-2.5 py-1 text-xs">
+              <button onclick="setStudioTool('stretch')" id="tool-btn-stretch" class="retro-btn px-2.5 py-1 text-xs" title="Растягивание размеров">
                 ↔ Растянуть
               </button>
-              <button onclick="setStudioTool('rotate')" id="tool-btn-rotate" class="retro-btn px-2.5 py-1 text-xs">
+              <button onclick="setStudioTool('rotate')" id="tool-btn-rotate" class="retro-btn px-2.5 py-1 text-xs" title="Вращение по осям">
                 🔄 Вращать
               </button>
-              <button onclick="duplicateSelectedStudioPart()" class="retro-btn px-2 py-1 text-xs font-bold text-blue-900" title="Дублировать парт">
+              <button onclick="duplicateSelectedStudioPart()" class="retro-btn px-2 py-1 text-xs font-bold text-blue-900" title="Дублировать парт/модель">
                 📑 Клон
               </button>
               <button onclick="deleteSelectedStudioPart()" class="retro-btn-red px-2.5 py-1 text-xs rounded">
@@ -474,6 +484,16 @@
               <button onclick="insertStudioPart('cylinder')" class="retro-btn px-2 py-1 text-xs">Цилиндр</button>
               <button onclick="insertStudioPart('sphere')" class="retro-btn px-2 py-1 text-xs">Сфера</button>
               <button onclick="insertStudioPart('wedge')" class="retro-btn px-2 py-1 text-xs">Клин</button>
+            </div>
+
+            <!-- Model & Script Tools -->
+            <div class="flex items-center gap-1 bg-white p-1 border rounded shadow-sm">
+              <button onclick="groupSelectedPartIntoModel()" class="retro-btn px-2.5 py-1 text-xs font-bold text-indigo-900" title="Сгруппировать в Model">
+                📦 Создать Модель
+              </button>
+              <button onclick="openScriptEditorForSelectedPart()" class="retro-btn px-2.5 py-1 text-xs font-bold text-emerald-800" title="Открыть редактор Lua">
+                📜 Скрипт (Lua)
+              </button>
             </div>
 
             <!-- Baseplate Lock Toggle -->
@@ -506,42 +526,51 @@
             </div>
 
             <div id="studio-drag-indicator" class="absolute top-2 left-2 bg-amber-500 text-slate-950 font-bold text-[11px] px-2.5 py-1 rounded shadow hidden pointer-events-none">
-              Перемещение парта по сетке...
+              Перемещение объекта по сетке...
             </div>
           </div>
 
           <!-- Studio Toolbox & Inspector -->
           <div class="col-span-1 space-y-3">
             <div class="retro-box p-3 text-xs">
-              <div class="retro-box-header -mx-3 -mt-3 mb-2">Инспектор парта</div>
+              <div class="retro-box-header -mx-3 -mt-3 mb-2 flex items-center justify-between">
+                <span>Инспектор объекта</span>
+                <span id="inspector-part-badge" class="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono hidden">Part</span>
+              </div>
               <div id="studio-inspector-content" class="text-slate-500 text-[11px]">
-                Нажмите на любой парт или Baseplate для редактирования.
+                Нажмите на любой парт или Baseplate для настройки коллизий, размеров, модели и скриптов.
               </div>
             </div>
 
             <div class="retro-box p-3 text-xs">
-              <div class="retro-box-header -mx-3 -mt-3 mb-2">Классический Toolbox 2008</div>
+              <div class="retro-box-header -mx-3 -mt-3 mb-2">Классический Toolbox 2008 & Модели</div>
               <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                 <button onclick="spawnToolboxItem('tree')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
-                  <span>🌲 Классическое дерево</span> <span class="text-slate-400">+</span>
+                  <span>🌲 Классическое дерево (Model)</span> <span class="text-slate-400">+</span>
                 </button>
                 <button onclick="spawnToolboxItem('tower')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
-                  <span>🏰 Сторожевая башня</span> <span class="text-slate-400">+</span>
+                  <span>🏰 Сторожевая башня (Model)</span> <span class="text-slate-400">+</span>
                 </button>
                 <button onclick="spawnToolboxItem('spawn')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
                   <span>🏁 Спавнпоинт (Spawn)</span> <span class="text-slate-400">+</span>
                 </button>
                 <button onclick="spawnToolboxItem('jumppad')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
-                  <span>🚀 Батут (JumpPad)</span> <span class="text-slate-400">+</span>
+                  <span>🚀 Батут (Lua JumpPad)</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('lava')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px] text-red-700">
+                  <span>🌋 Лава Килл-блок (Lua Lava)</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('spinner')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px] text-amber-700">
+                  <span>🔄 Вращалка (Lua Spinner)</span> <span class="text-slate-400">+</span>
+                </button>
+                <button onclick="spawnToolboxItem('ghost')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px] text-indigo-700">
+                  <span>👻 Призрачная стена (No Collide)</span> <span class="text-slate-400">+</span>
                 </button>
                 <button onclick="spawnToolboxItem('bridge')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
                   <span>🌉 Подвесной мостик</span> <span class="text-slate-400">+</span>
                 </button>
                 <button onclick="spawnToolboxItem('campfire')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
                   <span>🔥 Костер со светом</span> <span class="text-slate-400">+</span>
-                </button>
-                <button onclick="spawnToolboxItem('wall')" class="retro-btn w-full py-1 text-left px-2 flex items-center justify-between text-[11px]">
-                  <span>🧱 Кирпичная стена</span> <span class="text-slate-400">+</span>
                 </button>
               </div>
             </div>
@@ -680,10 +709,10 @@
 
           <div class="bg-blue-50 border border-blue-200 p-4 rounded-md">
             <h3 class="font-bold text-blue-900 text-sm mb-1.5 flex items-center gap-1.5">
-              <span>🏛️</span> О платформе BLOX2008
+              <span>🏛️</span> О платформе BLOX2008 & Studio Lua
             </h3>
             <p class="text-slate-700 leading-relaxed text-[12px]">
-              BLOX2008 — полноценная веб-реконструкция золотого века Roblox 2008 года. Здесь воссозданы аутентичные текстуры стадов, R6 аватары с настраиваемыми цветами и возможностью натянуть своё лицо, классический инвентарь с Linked Sword, интерактивный редактор Studio 2008 с перетаскиванием партов мышью, живой мультиплеер без задержек и полнофункциональная система модерации для администраторов.
+              BLOX2008 — полноценная веб-реконструкция золотого века Roblox 2008 года. Здесь воссозданы аутентичные текстуры стадов, R6 аватары со сменяемыми цветами и загрузкой своего лица с ПК, интерактивный редактор Studio 2008 с возможностью настраивать <b>CanCollide</b> коллизии, группировать парты в <b>Models</b>, писать рабочие скрипты на <b>Lua</b>, а также играть в живом мультиплеере.
             </p>
           </div>
 
@@ -724,7 +753,7 @@
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 text-center md:text-left">
       <div>
         <div class="font-bold text-slate-700">BLOX2008 &copy; 2008 - 2026</div>
-        <div class="text-[11px] text-slate-500">Автономная сетевая ретро-песочница. Поддержка PC и Touch.</div>
+        <div class="text-[11px] text-slate-500">Автономная сетевая ретро-песочница с поддержкой Lua скриптов и Models.</div>
       </div>
       <div class="flex space-x-3 text-[11px] text-[#004499]">
         <a href="javascript:void(0)" class="hover:underline" onclick="switchTab('games')">Игры</a>
@@ -799,7 +828,7 @@
         </div>
       </div>
 
-      <!-- Hotbar Inventory (Initially Empty by default) -->
+      <!-- Hotbar Inventory -->
       <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 pointer-events-auto flex gap-2 z-10" id="hotbar-inventory-container">
         <div id="hotbar-slot-1" onclick="selectHotbarSlot(1)" class="w-14 h-14 bg-gradient-to-b from-slate-700 to-slate-900 border-2 border-slate-600 opacity-40 rounded flex flex-col items-center justify-center cursor-pointer shadow-lg active:scale-95 transition-transform text-white">
           <span class="text-lg">🗡️</span>
@@ -829,6 +858,45 @@
             <button id="mobile-jump-btn" class="w-16 h-16 bg-emerald-600 text-white font-black text-xs rounded-full border-2 border-emerald-300 shadow-xl flex items-center justify-center active:scale-90">
               ПРЫЖОК
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LUA SCRIPT EDITOR MODAL -->
+  <div id="modal-lua-script" class="fixed inset-0 modal-backdrop hidden items-center justify-center p-4 z-50">
+    <div class="retro-box w-full max-w-2xl shadow-2xl border-2 border-emerald-500">
+      <div class="retro-box-header bg-gradient-to-r from-emerald-100 to-slate-100 text-emerald-950">
+        <span class="flex items-center gap-1.5 font-bold">
+          <span>📜</span> Редактор скрипта (Roblox Lua 2008) — <span id="script-target-part-name" class="font-mono text-xs text-blue-900">Part</span>
+        </span>
+        <button onclick="closeScriptEditorModal()" class="text-slate-600 hover:text-red-600 font-bold text-base">&times;</button>
+      </div>
+      <div class="p-4 text-xs space-y-3 bg-slate-900 text-slate-100">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 text-[11px]">Готовые пресеты Lua:</span>
+            <select id="lua-preset-select" onchange="applyLuaScriptPreset(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs px-2 py-1 rounded">
+              <option value="">-- Выбрать пресет --</option>
+              <option value="lava">🌋 Килл-блок (Lava / Урон 100 HP)</option>
+              <option value="jumppad">🚀 Супер-батут (JumpPad Boost)</option>
+              <option value="spinner">🔄 Вращение парта (Spinner)</option>
+              <option value="disappear">👻 Исчезающий блок (Disappearing)</option>
+              <option value="disco">🌈 Диско / Смена цветов (Color Cycler)</option>
+              <option value="teleport">⚡ Телепорт на спавн (Teleporter)</option>
+            </select>
+          </div>
+          <span class="text-[10px] text-emerald-400 font-mono">Скрипт автоматически запускается в 3D мире!</span>
+        </div>
+
+        <textarea id="lua-code-textarea" rows="12" class="w-full lua-code-editor p-3 rounded border border-slate-700 focus:outline-none focus:border-emerald-400 shadow-inner font-mono text-xs"></textarea>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+          <div>Доступны свойства: <code>script.Parent.Touched</code>, <code>CanCollide</code>, <code>Transparency</code>, <code>CFrame</code>, <code>BrickColor</code>, <code>TakeDamage()</code></div>
+          <div class="flex gap-2">
+            <button onclick="closeScriptEditorModal()" class="retro-btn px-4 py-1.5 text-slate-800 font-bold">Отмена</button>
+            <button onclick="saveCurrentLuaScript()" class="retro-btn-green px-5 py-1.5 rounded font-bold">Сохранить скрипт</button>
           </div>
         </div>
       </div>
@@ -976,7 +1044,7 @@
           <textarea id="pub-map-desc" rows="2" maxlength="150" placeholder="Проходите испытания вместе с друзьями!" class="w-full border border-gray-300 rounded p-2 text-xs"></textarea>
         </div>
         <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded text-[11px] text-emerald-900 leading-relaxed">
-          ⚡ <b>Глобальный доступ:</b> Ваша карта появится у всех пользователей в списке игр, и любой сможет зайти в неё в 3D!
+          ⚡ <b>Глобальный доступ:</b> Ваша карта с коллизиями, моделями и Lua скриптами появится у всех пользователей в списке игр!
         </div>
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
           <button type="button" onclick="closePublishMapModal()" class="retro-btn px-4 py-1.5">Отмена</button>
@@ -1062,10 +1130,6 @@
             <input type="text" id="admin-grant-nick" placeholder="Никнейм игрока..." class="flex-1 border border-gray-300 rounded px-2 py-1">
             <button onclick="handleGrantAdminClick()" class="retro-btn px-3 py-1 font-bold">Назначить</button>
           </div>
-        </div>
-
-        <div class="bg-amber-50 p-2.5 rounded border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
-          Администраторы видят красные кнопки <b>[Удалить]</b> возле <b>всех игр</b>, <b>вещей каталога</b> и <b>тем на форуме</b>. При удалении объект моментально стирается у всех пользователей сети.
         </div>
       </div>
     </div>
@@ -1158,13 +1222,13 @@
       } catch (e) {}
     }
 
-    const STORAGE_KEY_ACCOUNTS = 'blox2008_accounts_db_v5';
-    const STORAGE_KEY_CURRENT_USER = 'blox2008_current_user_v5';
-    const STORAGE_KEY_CUSTOM_SERVERS = 'blox2008_custom_servers_v5';
-    const STORAGE_KEY_FORUM = 'blox2008_forum_v5';
-    const STORAGE_KEY_CUSTOM_CLOTHING = 'blox2008_custom_clothing_v5';
-    const STORAGE_KEY_ADMINS = 'blox2008_admins_list_v5';
-    const STORAGE_KEY_BANS = 'blox2008_active_bans_v5';
+    const STORAGE_KEY_ACCOUNTS = 'blox2008_accounts_db_v6';
+    const STORAGE_KEY_CURRENT_USER = 'blox2008_current_user_v6';
+    const STORAGE_KEY_CUSTOM_SERVERS = 'blox2008_custom_servers_v6';
+    const STORAGE_KEY_FORUM = 'blox2008_forum_v6';
+    const STORAGE_KEY_CUSTOM_CLOTHING = 'blox2008_custom_clothing_v6';
+    const STORAGE_KEY_ADMINS = 'blox2008_admins_list_v6';
+    const STORAGE_KEY_BANS = 'blox2008_active_bans_v6';
 
     let currentAccount = null;
     let registeredAccounts = {};
@@ -1690,21 +1754,11 @@
             category: 'Общее',
             author: 'Cheburekin',
             time: '2008-09-01',
-            content: 'Приветствуем всех строителей и игроков! Здесь можно создавать свои игры в Studio, исследовать ретро-миры и общаться.',
+            content: 'Приветствуем всех строителей и скриптеров! Здесь можно создавать свои игры в Studio, писать скрипты на Lua, группировать модели и общаться.',
             likes: ['Cheburekin'],
             comments: [
-              { author: 'Player2008', text: 'Ура, старый добрый роблокс вернулся!', time: '10 минут назад' }
+              { author: 'Player2008', text: 'Ура, теперь в Studio есть полноценные коллизии, модели и Lua скрипты!', time: '10 минут назад' }
             ]
-          },
-          {
-            id: 'thread_showcase',
-            title: 'Делитесь своими постройками из Studio!',
-            category: 'Studio',
-            author: 'BuilderMan',
-            time: 'Сегодня',
-            content: 'Публикуйте названия ваших карт, делитесь идеями и кооперируйтесь для совместной игры!',
-            likes: [],
-            comments: []
           }
         ];
         saveForumPosts();
@@ -1981,7 +2035,7 @@
           password: 'password123',
           robux: 20,
           tix: 80,
-          blurb: 'Играю в BLOX2008!',
+          blurb: 'Играю в BLOX2008 с Lua скриптами!',
           colors: {
             head: '#f3c742',
             torso: '#0d69ac',
@@ -2368,7 +2422,7 @@
               <div>
                 <h4 class="font-bold text-sm text-[#003366] hover:underline cursor-pointer flex items-center gap-1.5" onclick="joinGameServer('${srv.roomId}')">
                   ${escapeHtml(srv.name)}
-                  ${srv.isCustom ? `<span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-300">Studio Place</span>` : ''}
+                  ${srv.isCustom ? `<span class="bg-amber-100 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-300">Studio Place (Lua)</span>` : ''}
                 </h4>
                 <div class="text-[11px] text-slate-500">
                   Карта: <b>${escapeHtml(srv.place)}</b> | Создатель: <b class="text-slate-700">${escapeHtml(srv.author || 'ROBLOX')}</b>
@@ -2413,7 +2467,7 @@
           breadcrumb.innerHTML = 'Catalog &raquo; Классический каталог вещей';
           renderCatalog();
         } else if (tabId === 'studio') {
-          breadcrumb.innerHTML = 'Studio &raquo; Конструктор и редактор карт 2008';
+          breadcrumb.innerHTML = 'Studio &raquo; Конструктор, Models и редактор Lua';
           setTimeout(() => {
             initStudioEditor();
           }, 50);
@@ -2455,10 +2509,12 @@
     let remotePlayers = {};
     let lastNetworkMoveSync = 0;
     let playerHealth = 100;
-    let hasEquippedSword = false; // Spawns completely WITHOUT items by default!
+    let hasEquippedSword = false;
     let swordMeshInstance = null;
     let isAttacking = false;
     let attackTimer = 0;
+    let activePhysicalColliders = []; // World objects for AABB collision
+    let activeWorldScriptRunners = []; // Active Lua scripts running in 3D
 
     let player3D = {
       pos: new THREE.Vector3(0, 0, 10),
@@ -2466,7 +2522,8 @@
       rotY: 0,
       isGrounded: true,
       avatarModel: null,
-      animCycle: 0
+      animCycle: 0,
+      jumpPower: 12.0
     };
 
     let cameraAngles = { yaw: 0, pitch: 0.35, distance: 14 };
@@ -2476,7 +2533,7 @@
     let prevMouseX = 0;
     let prevMouseY = 0;
 
-    function createClassicPlasticMaterial(hexColor, repeatX = 1, repeatY = 1) {
+    function createClassicPlasticMaterial(hexColor, repeatX = 1, repeatY = 1, opacity = 1) {
       const canvas = document.createElement('canvas');
       canvas.width = 64;
       canvas.height = 64;
@@ -2487,7 +2544,6 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(0, 0, 64, 64);
 
-      // 4 Classic Studs per texture cell
       const centers = [{ x: 16, y: 16 }, { x: 48, y: 16 }, { x: 16, y: 48 }, { x: 48, y: 48 }];
       centers.forEach(c => {
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -2505,13 +2561,22 @@
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
       tex.repeat.set(repeatX, repeatY);
-      return new THREE.MeshLambertMaterial({ map: tex });
+
+      const mat = new THREE.MeshLambertMaterial({ 
+        map: tex,
+        transparent: opacity < 1.0,
+        opacity: opacity
+      });
+      return mat;
     }
 
     function init3DGameWorld(placeName, customPartsData = null) {
       const container = document.getElementById('canvas-container');
       const width = container.clientWidth || window.innerWidth;
       const height = container.clientHeight || (window.innerHeight - 40);
+
+      activePhysicalColliders = [];
+      clearRunningWorldScripts();
 
       gameScene = new THREE.Scene();
       gameScene.background = new THREE.Color(placeName === 'Chaos Canyon' ? 0xf6ba7a : 0x7ec0ee);
@@ -2539,21 +2604,31 @@
       const baseplateMat = createClassicPlasticMaterial('#228b22', 40, 40);
       const baseplate = new THREE.Mesh(new THREE.BoxGeometry(240, 4, 240), baseplateMat);
       baseplate.position.y = -2;
+      baseplate.userData = { canCollide: true, isBaseplate: true };
       gameScene.add(baseplate);
 
-      // Build Map
+      // Build Map with Models, Parts, Collisions & Lua Scripts
       if (customPartsData && customPartsData.length > 0) {
         customPartsData.forEach(p => {
-          createBlockObstacle(p.x, p.y, p.z, p.w, p.h, p.d, p.color, gameScene);
+          const mesh = createBlockObstacle(p.x, p.y, p.z, p.w, p.h, p.d, p.color, gameScene, p.canCollide !== false, p.transparency || 0);
+          mesh.userData = { ...p };
+          if (p.scriptCode) {
+            setupWorldScriptRuntime(mesh, p.scriptCode);
+          }
         });
       } else {
         buildDefaultPlaceObstacles(placeName);
       }
 
       createLocal3DPlayer();
-      // Notice: No world items spawn on ground / pedestals per user request!
-
       window.addEventListener('resize', onGameResize);
+    }
+
+    function clearRunningWorldScripts() {
+      activeWorldScriptRunners.forEach(runner => {
+        if (runner && runner.stop) runner.stop();
+      });
+      activeWorldScriptRunners = [];
     }
 
     function onGameResize() {
@@ -2569,38 +2644,141 @@
 
     function buildDefaultPlaceObstacles(place) {
       if (place === 'Crossroads' || place === 'all') {
-        createBlockObstacle(0, 15, -40, 20, 30, 20, 0x1f2937);
-        createBlockObstacle(0, 20, -15, 8, 2, 30, 0xfacc15);
-        createBlockObstacle(-35, 4, -10, 12, 8, 12, 0xdc2626);
-        createBlockObstacle(35, 6, -10, 12, 12, 12, 0x2563eb);
-        createBlockObstacle(-30, 10, 35, 24, 20, 14, 0x64748b);
-        createBlockObstacle(25, 4, 25, 3, 8, 3, 0x78350f);
-        createBlockObstacle(25, 11, 25, 10, 6, 10, 0x16a34a);
+        createBlockObstacle(0, 15, -40, 20, 30, 20, 0x1f2937, gameScene, true);
+        createBlockObstacle(0, 20, -15, 8, 2, 30, 0xfacc15, gameScene, true);
+        createBlockObstacle(-35, 4, -10, 12, 8, 12, 0xdc2626, gameScene, true);
+        createBlockObstacle(35, 6, -10, 12, 12, 12, 0x2563eb, gameScene, true);
+        createBlockObstacle(-30, 10, 35, 24, 20, 14, 0x64748b, gameScene, true);
+        createBlockObstacle(25, 4, 25, 3, 8, 3, 0x78350f, gameScene, true);
+        createBlockObstacle(25, 11, 25, 10, 6, 10, 0x16a34a, gameScene, true);
       } else if (place === 'Happy Home') {
-        createBlockObstacle(0, 8, -20, 32, 16, 2, 0xdc2626);
-        createBlockObstacle(-15, 8, -5, 2, 16, 30, 0xdc2626);
-        createBlockObstacle(15, 8, -5, 2, 16, 30, 0xdc2626);
-        createBlockObstacle(0, 17, -5, 36, 2, 34, 0x1e293b);
-        createBlockObstacle(10, 20, -5, 4, 8, 4, 0x475569);
+        createBlockObstacle(0, 8, -20, 32, 16, 2, 0xdc2626, gameScene, true);
+        createBlockObstacle(-15, 8, -5, 2, 16, 30, 0xdc2626, gameScene, true);
+        createBlockObstacle(15, 8, -5, 2, 16, 30, 0xdc2626, gameScene, true);
+        createBlockObstacle(0, 17, -5, 36, 2, 34, 0x1e293b, gameScene, true);
+        createBlockObstacle(10, 20, -5, 4, 8, 4, 0x475569, gameScene, true);
         for (let fx = -24; fx <= 24; fx += 8) {
-          createBlockObstacle(fx, 1.5, 18, 6, 3, 1, 0xffffff);
+          createBlockObstacle(fx, 1.5, 18, 6, 3, 1, 0xffffff, gameScene, true);
         }
       } else if (place === 'Chaos Canyon') {
-        createBlockObstacle(-40, 12, -20, 30, 24, 30, 0xb45309);
-        createBlockObstacle(40, 16, -20, 30, 32, 30, 0x9a3412);
-        createBlockObstacle(0, 18, -20, 50, 2, 8, 0x451a03);
-        createBlockObstacle(0, 8, 20, 20, 16, 20, 0x78350f);
+        createBlockObstacle(-40, 12, -20, 30, 24, 30, 0xb45309, gameScene, true);
+        createBlockObstacle(40, 16, -20, 30, 32, 30, 0x9a3412, gameScene, true);
+        createBlockObstacle(0, 18, -20, 50, 2, 8, 0x451a03, gameScene, true);
+        createBlockObstacle(0, 8, 20, 20, 16, 20, 0x78350f, gameScene, true);
       }
     }
 
-    function createBlockObstacle(x, y, z, w, h, d, hex, targetScene = gameScene) {
+    function createBlockObstacle(x, y, z, w, h, d, hex, targetScene = gameScene, canCollide = true, transparency = 0) {
       const geo = new THREE.BoxGeometry(w, h, d);
       const colorStr = typeof hex === 'number' ? '#' + hex.toString(16).padStart(6, '0') : hex;
-      const mat = createClassicPlasticMaterial(colorStr, Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(d / 2)));
+      const opacity = canCollide ? (1.0 - (transparency || 0)) : Math.min(0.65, 1.0 - (transparency || 0));
+      const mat = createClassicPlasticMaterial(colorStr, Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(d / 2)), opacity);
       const m = new THREE.Mesh(geo, mat);
       m.position.set(x, y, z);
+      m.userData = {
+        canCollide: canCollide,
+        w: w, h: h, d: d,
+        color: colorStr
+      };
+
       targetScene.add(m);
+      if (canCollide) {
+        activePhysicalColliders.push(m);
+      }
       return m;
+    }
+
+    function setupWorldScriptRuntime(mesh, luaCode) {
+      if (!luaCode || !luaCode.trim()) return;
+
+      let isRunning = true;
+      const runner = {
+        stop: () => { isRunning = false; }
+      };
+
+      // 1. Check for Touched Event Handler
+      if (luaCode.includes('Touched:Connect') || luaCode.includes('TakeDamage') || luaCode.includes('JumpPower')) {
+        mesh.userData.hasTouchedListener = true;
+        mesh.userData.onPlayerTouch = (player) => {
+          if (!isRunning) return;
+
+          // Kill-brick / Lava
+          if (luaCode.includes('TakeDamage')) {
+            const match = luaCode.match(/TakeDamage\((\d+)\)/);
+            const dmg = match ? parseInt(match[1]) : 100;
+            if (!adminGodMode) {
+              playerHealth = Math.max(0, playerHealth - dmg);
+              updateHPBarHUD();
+              playRetroOofSound();
+              showInGameChat('[Скрипт]: OOF! Вы наступили на смертельный блок!');
+              if (playerHealth <= 0) {
+                player3D.pos.set(0, 10, 0);
+                player3D.vel.set(0, 0, 0);
+                playerHealth = 100;
+                updateHPBarHUD();
+              }
+            }
+          }
+
+          // JumpPad / Boost
+          if (luaCode.includes('JumpPower') || luaCode.includes('Jump')) {
+            player3D.vel.y = 26.0;
+            player3D.isGrounded = false;
+            playRetroJumpSound();
+            showToast('🚀 JumpPad активирован скриптом!');
+          }
+
+          // Teleporter
+          if (luaCode.includes('CFrame.new') || luaCode.includes('Teleport')) {
+            player3D.pos.set(0, 15, 0);
+            player3D.vel.set(0, 0, 0);
+            playRetroJumpSound();
+            showToast('⚡ Телепортация выполнена скриптом!');
+          }
+
+          // Ghost / Disappearing Platform
+          if (luaCode.includes('CanCollide = false') || luaCode.includes('Transparency')) {
+            setTimeout(() => {
+              mesh.material.opacity = 0.2;
+              mesh.userData.canCollide = false;
+              activePhysicalColliders = activePhysicalColliders.filter(c => c !== mesh);
+              setTimeout(() => {
+                mesh.material.opacity = 1.0;
+                mesh.userData.canCollide = true;
+                if (!activePhysicalColliders.includes(mesh)) activePhysicalColliders.push(mesh);
+              }, 3000);
+            }, 800);
+          }
+        };
+      }
+
+      // 2. Check for Loop / Continuous Animation (Spinner, Color Cycler)
+      if (luaCode.includes('while true do') || luaCode.includes('Angles') || luaCode.includes('BrickColor')) {
+        let lastTick = performance.now();
+        const interval = setInterval(() => {
+          if (!isRunning || !mesh.parent) {
+            clearInterval(interval);
+            return;
+          }
+          const now = performance.now();
+          const dt = (now - lastTick) / 1000;
+          lastTick = now;
+
+          // Spinner
+          if (luaCode.includes('Angles') || luaCode.includes('rad')) {
+            mesh.rotation.y += 2.5 * dt;
+          }
+
+          // Disco / Color Cycler
+          if (luaCode.includes('BrickColor.random') && Math.random() < 0.1) {
+            const randColors = ['#dc2626', '#2563eb', '#16a34a', '#facc15', '#9333ea', '#ea580c'];
+            const chosen = randColors[Math.floor(Math.random() * randColors.length)];
+            mesh.material = createClassicPlasticMaterial(chosen, 2, 2, mesh.userData.canCollide ? 1 : 0.6);
+          }
+        }, 30);
+      }
+
+      activeWorldScriptRunners.push(runner);
     }
 
     function createClassicSwordMesh() {
@@ -2706,7 +2884,6 @@
       rightArmPivot.add(rArm);
       group.add(rightArmPivot);
 
-      // Sword mesh initially hidden unless given/equipped
       const sword = createClassicSwordMesh();
       sword.position.set(0, -0.9, 0.65);
       sword.rotation.x = Math.PI / 3.5;
@@ -2844,7 +3021,7 @@
           if (adminFlyMode) {
             player3D.pos.y += 2.0;
           } else {
-            player3D.vel.y = 12.0;
+            player3D.vel.y = player3D.jumpPower || 12.0;
             player3D.isGrounded = false;
             playRetroJumpSound();
           }
@@ -2918,7 +3095,7 @@
           if (adminFlyMode) {
             player3D.pos.y += 2.0;
           } else {
-            player3D.vel.y = 12.0;
+            player3D.vel.y = player3D.jumpPower || 12.0;
             player3D.isGrounded = false;
             playRetroJumpSound();
           }
@@ -3045,8 +3222,36 @@
           .normalize();
 
         const speed = adminSuperSpeed ? 36.0 : 13.5;
-        player3D.pos.x += moveDir.x * speed * dt;
-        player3D.pos.z += moveDir.z * speed * dt;
+        const nextX = player3D.pos.x + moveDir.x * speed * dt;
+        const nextZ = player3D.pos.z + moveDir.z * speed * dt;
+
+        // AABB Horizontal Collision Check against Collidable Parts
+        let canMoveX = true;
+        let canMoveZ = true;
+        const pRadius = 1.0;
+
+        activePhysicalColliders.forEach(c => {
+          if (!c.userData || c.userData.canCollide === false) return;
+          const box = new THREE.Box3().setFromObject(c);
+          
+          // Check collision on X
+          if (nextX + pRadius > box.min.x && nextX - pRadius < box.max.x &&
+              player3D.pos.z + pRadius > box.min.z && player3D.pos.z - pRadius < box.max.z &&
+              player3D.pos.y + 0.2 < box.max.y && player3D.pos.y + 4.8 > box.min.y) {
+            canMoveX = false;
+          }
+
+          // Check collision on Z
+          if (player3D.pos.x + pRadius > box.min.x && player3D.pos.x - pRadius < box.max.x &&
+              nextZ + pRadius > box.min.z && nextZ - pRadius < box.max.z &&
+              player3D.pos.y + 0.2 < box.max.y && player3D.pos.y + 4.8 > box.min.y) {
+            canMoveZ = false;
+          }
+        });
+
+        if (canMoveX) player3D.pos.x = nextX;
+        if (canMoveZ) player3D.pos.z = nextZ;
+
         player3D.rotY = Math.atan2(moveDir.x, moveDir.z);
 
         player3D.animCycle += dt * 14.0;
@@ -3070,15 +3275,50 @@
         }
       }
 
+      // Vertical Gravity & Standing on Solid Parts
       if (!adminFlyMode) {
         player3D.vel.y -= 28.0 * dt;
-        player3D.pos.y += player3D.vel.y * dt;
+        const nextY = player3D.pos.y + player3D.vel.y * dt;
 
-        if (player3D.pos.y <= 0) {
-          player3D.pos.y = 0;
+        let landedFloorY = 0;
+        let hasLanded = false;
+
+        activePhysicalColliders.forEach(c => {
+          if (!c.userData || c.userData.canCollide === false) return;
+          const box = new THREE.Box3().setFromObject(c);
+          if (player3D.pos.x + 0.8 > box.min.x && player3D.pos.x - 0.8 < box.max.x &&
+              player3D.pos.z + 0.8 > box.min.z && player3D.pos.z - 0.8 < box.max.z) {
+            if (player3D.pos.y >= box.max.y - 0.4 && nextY <= box.max.y) {
+              if (box.max.y > landedFloorY) {
+                landedFloorY = box.max.y;
+                hasLanded = true;
+              }
+            }
+          }
+        });
+
+        if (hasLanded || nextY <= landedFloorY) {
+          player3D.pos.y = landedFloorY;
           player3D.vel.y = 0;
           player3D.isGrounded = true;
+        } else {
+          player3D.pos.y = nextY;
+          player3D.isGrounded = false;
         }
+      }
+
+      // Lua Touched Event Triggering
+      if (gameScene) {
+        gameScene.traverse((obj) => {
+          if (obj.userData && obj.userData.hasTouchedListener && obj.userData.onPlayerTouch) {
+            const b = new THREE.Box3().setFromObject(obj);
+            if (player3D.pos.x >= b.min.x - 0.5 && player3D.pos.x <= b.max.x + 0.5 &&
+                player3D.pos.z >= b.min.z - 0.5 && player3D.pos.z <= b.max.z + 0.5 &&
+                player3D.pos.y >= b.min.y - 0.5 && player3D.pos.y <= b.max.y + 3.0) {
+              obj.userData.onPlayerTouch(player3D);
+            }
+          }
+        });
       }
 
       if (player3D.pos.y < -30) {
@@ -3099,7 +3339,7 @@
       );
       gameCamera.lookAt(target);
 
-      // Synchronize remote players
+      // Remote Players Interpolation
       const now = performance.now();
       Object.keys(remotePlayers).forEach(id => {
         const rp = remotePlayers[id];
@@ -3226,7 +3466,6 @@
       playerHealth = 100;
       updateHPBarHUD();
 
-      // Reset starting inventory: always spawn empty-handed
       hasEquippedSword = false;
       const slotEl = document.getElementById('hotbar-slot-1');
       if (slotEl) {
@@ -3256,6 +3495,7 @@
         cancelAnimationFrame(gameAnimationId);
         gameAnimationId = null;
       }
+      clearRunningWorldScripts();
       disconnectFromNetworkRoom();
       document.getElementById('screen-3d-game').classList.add('hidden');
       switchTab('games');
@@ -3395,10 +3635,9 @@
     let selectedStudioPart = null;
     let studioBaseplate = null;
     let isBaseplateLocked = true;
-    let activeStudioTool = 'select'; // 'select', 'move', 'stretch', 'rotate'
+    let activeStudioTool = 'select';
     let studioSelectionHelper = null;
 
-    // Mouse Dragging State for Studio
     let isDraggingPart = false;
     let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     let dragPlaneIntersect = new THREE.Vector3();
@@ -3467,7 +3706,13 @@
       const baseplateMat = createClassicPlasticMaterial('#228b22', 20, 20);
       studioBaseplate = new THREE.Mesh(new THREE.BoxGeometry(120, 2, 120), baseplateMat);
       studioBaseplate.position.set(0, -1, 0);
-      studioBaseplate.userData = { isBaseplate: true, name: 'Baseplate', w: 120, h: 2, d: 120, color: '#228b22' };
+      studioBaseplate.userData = { 
+        isBaseplate: true, 
+        name: 'Baseplate', 
+        w: 120, h: 2, d: 120, 
+        color: '#228b22',
+        canCollide: true
+      };
       studioScene.add(studioBaseplate);
     }
 
@@ -3511,20 +3756,52 @@
       else if (shape === 'wedge') geo = new THREE.BoxGeometry(4, 2, 4);
 
       const color = '#facc15';
-      const mat = createClassicPlasticMaterial(color, 2, 2);
+      const mat = createClassicPlasticMaterial(color, 2, 2, 1);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(0, 1, 0);
       mesh.userData = {
         name: `Part_${studioParts.length + 1}`,
         color: color,
         shape: shape,
-        w: 4, h: 2, d: 4
+        w: 4, h: 2, d: 4,
+        canCollide: true,
+        modelName: null,
+        scriptCode: ''
       };
 
       studioScene.add(mesh);
       studioParts.push(mesh);
       selectStudioPart(mesh);
       showToast('Парт добавлен в сцену!');
+    }
+
+    function groupSelectedPartIntoModel() {
+      if (!selectedStudioPart) {
+        showToast('Сначала выберите парт для создания модели!');
+        return;
+      }
+      const modelName = prompt('Введите имя для новой Модели (Model):', selectedStudioPart.userData.modelName || 'MyModel');
+      if (modelName && modelName.trim()) {
+        selectedStudioPart.userData.modelName = modelName.trim();
+        renderStudioInspector(selectedStudioPart);
+        showToast(`Парт сгруппирован в Model «${modelName.trim()}»!`);
+      }
+    }
+
+    function ungroupSelectedPart() {
+      if (!selectedStudioPart) return;
+      selectedStudioPart.userData.modelName = null;
+      renderStudioInspector(selectedStudioPart);
+      showToast('Парт разгруппирован из Модели!');
+    }
+
+    function toggleSelectedPartCanCollide(val) {
+      if (!selectedStudioPart) return;
+      selectedStudioPart.userData.canCollide = val;
+      selectedStudioPart.material.transparent = !val;
+      selectedStudioPart.material.opacity = val ? 1.0 : 0.6;
+      selectedStudioPart.material.needsUpdate = true;
+      showToast(val ? 'CanCollide: ВКЛ (Твердый блок)' : 'CanCollide: ВЫКЛ (Сквозной блок)');
     }
 
     function duplicateSelectedStudioPart() {
@@ -3539,18 +3816,21 @@
 
       const p = selectedStudioPart;
       const cloneGeo = p.geometry.clone();
-      const cloneMat = createClassicPlasticMaterial(p.userData.color || '#facc15', 2, 2);
+      const cloneMat = createClassicPlasticMaterial(p.userData.color || '#facc15', 2, 2, p.userData.canCollide ? 1 : 0.6);
       const cloneMesh = new THREE.Mesh(cloneGeo, cloneMat);
 
       cloneMesh.position.copy(p.position).add(new THREE.Vector3(2, 0, 2));
       cloneMesh.rotation.copy(p.rotation);
       cloneMesh.scale.copy(p.scale);
-      cloneMesh.userData = { ...p.userData, name: p.userData.name + '_Copy' };
+      cloneMesh.userData = { 
+        ...p.userData, 
+        name: p.userData.name + '_Copy' 
+      };
 
       studioScene.add(cloneMesh);
       studioParts.push(cloneMesh);
       selectStudioPart(cloneMesh);
-      showToast('Парт скопирован!');
+      showToast('Парт/Модель скопирована!');
     }
 
     function selectStudioPart(mesh) {
@@ -3560,14 +3840,20 @@
       }
 
       selectedStudioPart = mesh;
+      const badge = document.getElementById('inspector-part-badge');
 
       if (mesh) {
         studioSelectionHelper = new THREE.BoxHelper(mesh, 0x00ffff);
         studioScene.add(studioSelectionHelper);
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.textContent = mesh.userData.modelName ? `Model: ${mesh.userData.modelName}` : 'Part';
+        }
         renderStudioInspector(mesh);
       } else {
+        if (badge) badge.classList.add('hidden');
         document.getElementById('studio-inspector-content').innerHTML = `
-          <div class="text-slate-500 text-[11px]">Нажмите на любой парт или Baseplate для редактирования.</div>
+          <div class="text-slate-500 text-[11px]">Нажмите на любой парт или Baseplate для настройки коллизий, размеров, модели и скриптов.</div>
         `;
       }
     }
@@ -3577,15 +3863,55 @@
       if (!container || !mesh) return;
 
       const isBp = mesh.userData.isBaseplate;
+      const canCollideChecked = mesh.userData.canCollide !== false;
+      const hasScript = !!(mesh.userData.scriptCode && mesh.userData.scriptCode.trim());
+      const modelName = mesh.userData.modelName || null;
+
       container.innerHTML = `
         <div class="space-y-2.5">
           <div class="flex items-center justify-between border-b pb-1">
             <span class="font-bold text-blue-900">${escapeHtml(mesh.userData.name || 'Объект')}</span>
             <span class="text-[10px] text-slate-500 font-mono">X:${mesh.position.x.toFixed(1)} Y:${mesh.position.y.toFixed(1)} Z:${mesh.position.z.toFixed(1)}</span>
           </div>
+
+          <!-- CanCollide Toggle & Model Indicator -->
+          <div class="bg-blue-50 p-2 rounded border border-blue-200 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="font-bold text-blue-950 text-[11px] flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" ${canCollideChecked ? 'checked' : ''} onchange="toggleSelectedPartCanCollide(this.checked)" class="rounded">
+                <span>CanCollide (Коллизия)</span>
+              </label>
+              <span class="text-[10px] ${canCollideChecked ? 'text-emerald-700 font-bold' : 'text-slate-500'}">
+                ${canCollideChecked ? 'Твердый' : 'Сквозной'}
+              </span>
+            </div>
+
+            <!-- Model Info -->
+            <div class="flex items-center justify-between text-[11px] pt-1 border-t border-blue-200/60">
+              <span class="text-slate-600">Группа (Model): <b>${escapeHtml(modelName || 'Нет')}</b></span>
+              ${modelName ? `
+                <button onclick="ungroupSelectedPart()" class="retro-btn text-[10px] px-2 py-0.5 text-red-700">Разгруппировать</button>
+              ` : `
+                <button onclick="groupSelectedPartIntoModel()" class="retro-btn text-[10px] px-2 py-0.5 text-blue-900 font-bold">+ Model</button>
+              `}
+            </div>
+          </div>
+
+          <!-- Script Lua Action -->
+          <div class="flex items-center justify-between bg-emerald-50 p-2 rounded border border-emerald-200">
+            <div>
+              <b class="text-emerald-900 text-[11px]">Скрипт Lua:</b>
+              <div class="text-[10px] ${hasScript ? 'text-emerald-700 font-bold' : 'text-slate-500'}">
+                ${hasScript ? 'Активен (Код задан ✔)' : 'Нет скрипта'}
+              </div>
+            </div>
+            <button onclick="openScriptEditorForSelectedPart()" class="retro-btn-green px-3 py-1 text-[11px] rounded shadow">
+              ${hasScript ? 'Изменить Lua' : '+ Создать Lua'}
+            </button>
+          </div>
           
           <div>
-            <label class="block font-bold text-slate-700 text-[10px] mb-1">Цвет парта (Classic 2008 Palette):</label>
+            <label class="block font-bold text-slate-700 text-[10px] mb-1">Цвет парта:</label>
             <div class="grid grid-cols-6 gap-1 mb-1.5">
               <button onclick="changeStudioPartColor('#f3c742')" class="w-full h-5 rounded border border-black/30" style="background:#f3c742" title="Bright Yellow"></button>
               <button onclick="changeStudioPartColor('#0d69ac')" class="w-full h-5 rounded border border-black/30" style="background:#0d69ac" title="Bright Blue"></button>
@@ -3620,16 +3946,6 @@
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block font-bold text-slate-700 text-[10px]">Сдвинуть по координатам:</label>
-            <div class="grid grid-cols-4 gap-1">
-              <button onclick="nudgeSelectedPart('x', 2)" class="retro-btn py-0.5 text-[10px] font-bold">+X</button>
-              <button onclick="nudgeSelectedPart('x', -2)" class="retro-btn py-0.5 text-[10px] font-bold">-X</button>
-              <button onclick="nudgeSelectedPart('z', 2)" class="retro-btn py-0.5 text-[10px] font-bold">+Z</button>
-              <button onclick="nudgeSelectedPart('z', -2)" class="retro-btn py-0.5 text-[10px] font-bold">-Z</button>
-            </div>
-          </div>
-
           <div class="pt-2 border-t border-slate-200">
             <button onclick="deleteSelectedStudioPart()" class="retro-btn-red w-full py-1 text-xs rounded font-bold">
               ${isBp ? 'Удалить Baseplate' : 'Удалить парт'}
@@ -3639,9 +3955,97 @@
       `;
     }
 
+    function openScriptEditorForSelectedPart() {
+      if (!selectedStudioPart) {
+        showToast('Сначала выберите парт для редактирования Lua скрипта!');
+        return;
+      }
+      const partName = selectedStudioPart.userData.name || 'Part';
+      document.getElementById('script-target-part-name').textContent = partName;
+      document.getElementById('lua-code-textarea').value = selectedStudioPart.userData.scriptCode || 
+`-- Скрипт парта: ${partName}
+-- Пример использования:
+script.Parent.Touched:Connect(function(hit)
+  print("Part touched by " .. hit.Name)
+end)
+`;
+      document.getElementById('modal-lua-script').classList.remove('hidden');
+      document.getElementById('modal-lua-script').classList.add('flex');
+    }
+
+    function closeScriptEditorModal() {
+      document.getElementById('modal-lua-script').classList.add('hidden');
+      document.getElementById('modal-lua-script').classList.remove('flex');
+    }
+
+    function applyLuaScriptPreset(preset) {
+      const editor = document.getElementById('lua-code-textarea');
+      if (!editor || !preset) return;
+
+      if (preset === 'lava') {
+        editor.value = 
+`-- Лава / Смертельный блок
+script.Parent.Touched:Connect(function(hit)
+  if hit.Parent:FindFirstChild("Humanoid") then
+    hit.Parent.Humanoid:TakeDamage(100)
+  end
+end)`;
+      } else if (preset === 'jumppad') {
+        editor.value = 
+`-- Супер-батут (JumpPad)
+script.Parent.Touched:Connect(function(hit)
+  if hit.Parent:FindFirstChild("Humanoid") then
+    hit.Parent.Humanoid.JumpPower = 90
+  end
+end)`;
+      } else if (preset === 'spinner') {
+        editor.value = 
+`-- Вращающаяся платформа
+while true do
+  script.Parent.CFrame = script.Parent.CFrame * CFrame.Angles(0, math.rad(3), 0)
+  wait(0.03)
+end`;
+      } else if (preset === 'disappear') {
+        editor.value = 
+`-- Исчезающий призрачный блок
+script.Parent.Touched:Connect(function()
+  wait(1)
+  script.Parent.Transparency = 1
+  script.Parent.CanCollide = false
+  wait(3)
+  script.Parent.Transparency = 0
+  script.Parent.CanCollide = true
+end)`;
+      } else if (preset === 'disco') {
+        editor.value = 
+`-- Диско блок (Смена цветов)
+while true do
+  script.Parent.BrickColor = BrickColor.random()
+  wait(1)
+end`;
+      } else if (preset === 'teleport') {
+        editor.value = 
+`-- Телепорт на начальную точку
+script.Parent.Touched:Connect(function(hit)
+  if hit.Parent:FindFirstChild("Torso") then
+    hit.Parent.Torso.CFrame = CFrame.new(0, 15, 0)
+  end
+end)`;
+      }
+    }
+
+    function saveCurrentLuaScript() {
+      if (!selectedStudioPart) return;
+      const code = document.getElementById('lua-code-textarea').value;
+      selectedStudioPart.userData.scriptCode = code;
+      closeScriptEditorModal();
+      renderStudioInspector(selectedStudioPart);
+      showToast('Lua скрипт успешно сохранен в парт!');
+    }
+
     function changeStudioPartColor(hex) {
       if (!selectedStudioPart) return;
-      selectedStudioPart.material = createClassicPlasticMaterial(hex, 2, 2);
+      selectedStudioPart.material = createClassicPlasticMaterial(hex, 2, 2, selectedStudioPart.userData.canCollide ? 1 : 0.6);
       selectedStudioPart.userData.color = hex;
       renderStudioInspector(selectedStudioPart);
     }
@@ -3668,14 +4072,6 @@
         selectedStudioPart.userData.d = (selectedStudioPart.userData.d || 4) + delta;
       }
       if (studioSelectionHelper) studioSelectionHelper.update();
-    }
-
-    function nudgeSelectedPart(axis, dist) {
-      if (!selectedStudioPart) return;
-      if (axis === 'x') selectedStudioPart.position.x += dist;
-      if (axis === 'z') selectedStudioPart.position.z += dist;
-      if (studioSelectionHelper) studioSelectionHelper.update();
-      renderStudioInspector(selectedStudioPart);
     }
 
     function deleteSelectedStudioPart() {
@@ -3789,44 +4185,77 @@
 
     function spawnToolboxItem(type) {
       if (type === 'tree') {
-        const trunk = createBlockObstacle(0, 4, 0, 2, 8, 2, 0x78350f, studioScene);
-        trunk.userData = { name: 'Tree_Trunk', color: '#78350f', w: 2, h: 8, d: 2 };
-        const leaves = createBlockObstacle(0, 10, 0, 8, 6, 8, 0x15803d, studioScene);
-        leaves.userData = { name: 'Tree_Leaves', color: '#15803d', w: 8, h: 6, d: 8 };
+        const trunk = createBlockObstacle(0, 4, 0, 2, 8, 2, 0x78350f, studioScene, true);
+        trunk.userData = { name: 'Tree_Trunk', modelName: 'ClassicTree', color: '#78350f', w: 2, h: 8, d: 2, canCollide: true };
+        const leaves = createBlockObstacle(0, 10, 0, 8, 6, 8, 0x15803d, studioScene, true);
+        leaves.userData = { name: 'Tree_Leaves', modelName: 'ClassicTree', color: '#15803d', w: 8, h: 6, d: 8, canCollide: true };
         studioParts.push(trunk, leaves);
         selectStudioPart(leaves);
       } else if (type === 'tower') {
-        const tower = createBlockObstacle(0, 10, 0, 8, 20, 8, 0x334155, studioScene);
-        tower.userData = { name: 'Watch_Tower', color: '#334155', w: 8, h: 20, d: 8 };
+        const tower = createBlockObstacle(0, 10, 0, 8, 20, 8, 0x334155, studioScene, true);
+        tower.userData = { name: 'Watch_Tower', modelName: 'WatchTower', color: '#334155', w: 8, h: 20, d: 8, canCollide: true };
         studioParts.push(tower);
         selectStudioPart(tower);
       } else if (type === 'spawn') {
-        const sp = createBlockObstacle(0, 0.5, 0, 6, 1, 6, 0x22c55e, studioScene);
-        sp.userData = { name: 'SpawnPoint', color: '#22c55e', w: 6, h: 1, d: 6 };
+        const sp = createBlockObstacle(0, 0.5, 0, 6, 1, 6, 0x22c55e, studioScene, true);
+        sp.userData = { name: 'SpawnPoint', color: '#22c55e', w: 6, h: 1, d: 6, canCollide: true };
         studioParts.push(sp);
         selectStudioPart(sp);
       } else if (type === 'jumppad') {
-        const pad = createBlockObstacle(0, 0.5, 0, 5, 1, 5, 0xeab308, studioScene);
-        pad.userData = { name: 'JumpPad', color: '#eab308', w: 5, h: 1, d: 5 };
+        const pad = createBlockObstacle(0, 0.5, 0, 5, 1, 5, 0xeab308, studioScene, true);
+        pad.userData = { 
+          name: 'JumpPad_Scripted', 
+          color: '#eab308', 
+          w: 5, h: 1, d: 5, 
+          canCollide: true,
+          scriptCode: `script.Parent.Touched:Connect(function(hit)\n  hit.Parent.Humanoid.JumpPower = 90\nend)`
+        };
         studioParts.push(pad);
         selectStudioPart(pad);
+      } else if (type === 'lava') {
+        const lava = createBlockObstacle(0, 0.5, 0, 8, 1, 8, 0xef4444, studioScene, true);
+        lava.userData = { 
+          name: 'Lava_KillBlock', 
+          color: '#ef4444', 
+          w: 8, h: 1, d: 8, 
+          canCollide: true,
+          scriptCode: `script.Parent.Touched:Connect(function(hit)\n  hit.Parent.Humanoid:TakeDamage(100)\nend)`
+        };
+        studioParts.push(lava);
+        selectStudioPart(lava);
+      } else if (type === 'spinner') {
+        const spin = createBlockObstacle(0, 3, 0, 10, 1.5, 3, 0xf59e0b, studioScene, true);
+        spin.userData = { 
+          name: 'Spinner_Bar', 
+          color: '#f59e0b', 
+          w: 10, h: 1.5, d: 3, 
+          canCollide: true,
+          scriptCode: `while true do\n  script.Parent.CFrame = script.Parent.CFrame * CFrame.Angles(0, math.rad(3), 0)\n  wait(0.03)\nend`
+        };
+        studioParts.push(spin);
+        selectStudioPart(spin);
+      } else if (type === 'ghost') {
+        const ghost = createBlockObstacle(0, 4, 0, 8, 8, 2, 0x818cf8, studioScene, false);
+        ghost.userData = { 
+          name: 'GhostWall', 
+          color: '#818cf8', 
+          w: 8, h: 8, d: 2, 
+          canCollide: false 
+        };
+        studioParts.push(ghost);
+        selectStudioPart(ghost);
       } else if (type === 'bridge') {
-        const b = createBlockObstacle(0, 4, 0, 6, 1, 24, 0x92400e, studioScene);
-        b.userData = { name: 'Wood_Bridge', color: '#92400e', w: 6, h: 1, d: 24 };
+        const b = createBlockObstacle(0, 4, 0, 6, 1, 24, 0x92400e, studioScene, true);
+        b.userData = { name: 'Wood_Bridge', modelName: 'Bridge', color: '#92400e', w: 6, h: 1, d: 24, canCollide: true };
         studioParts.push(b);
         selectStudioPart(b);
       } else if (type === 'campfire') {
-        const fire = createBlockObstacle(0, 1, 0, 3, 2, 3, 0xef4444, studioScene);
-        fire.userData = { name: 'Campfire', color: '#ef4444', w: 3, h: 2, d: 3 };
+        const fire = createBlockObstacle(0, 1, 0, 3, 2, 3, 0xef4444, studioScene, true);
+        fire.userData = { name: 'Campfire', modelName: 'Campfire', color: '#ef4444', w: 3, h: 2, d: 3, canCollide: true };
         studioParts.push(fire);
         selectStudioPart(fire);
-      } else if (type === 'wall') {
-        const wall = createBlockObstacle(0, 4, 0, 16, 8, 2, 0xdc2626, studioScene);
-        wall.userData = { name: 'BrickWall', color: '#dc2626', w: 16, h: 8, d: 2 };
-        studioParts.push(wall);
-        selectStudioPart(wall);
       }
-      showToast('Модель добавлена в Studio!');
+      showToast('Модель/Парт добавлен в Studio!');
     }
 
     function playSoloStudio() {
@@ -3837,12 +4266,15 @@
         w: (p.userData.w || 4) * p.scale.x,
         h: (p.userData.h || 2) * p.scale.y,
         d: (p.userData.d || 4) * p.scale.z,
-        color: p.userData.color || '#facc15'
+        color: p.userData.color || '#facc15',
+        canCollide: p.userData.canCollide !== false,
+        modelName: p.userData.modelName || null,
+        scriptCode: p.userData.scriptCode || ''
       }));
 
       document.getElementById('screen-3d-game').classList.remove('hidden');
       document.getElementById('game-map-name').textContent = 'Studio Test (Play Solo)';
-      document.getElementById('game-titlebar').textContent = `ROBLOX 3D — Solo Studio Test`;
+      document.getElementById('game-titlebar').textContent = `ROBLOX 3D — Solo Studio Test (Lua Active)`;
 
       playerHealth = 100;
       updateHPBarHUD();
@@ -3857,7 +4289,7 @@
       setTimeout(() => {
         document.getElementById('three-viewport')?.focus();
       }, 100);
-      showToast('Тестирование карты запущено!');
+      showToast('Тестирование карты запущено: коллизии и скрипты активны!');
     }
 
     function openPublishMapModal() {
@@ -3887,7 +4319,10 @@
         w: (p.userData.w || 4) * p.scale.x,
         h: (p.userData.h || 2) * p.scale.y,
         d: (p.userData.d || 4) * p.scale.z,
-        color: p.userData.color || '#facc15'
+        color: p.userData.color || '#facc15',
+        canCollide: p.userData.canCollide !== false,
+        modelName: p.userData.modelName || null,
+        scriptCode: p.userData.scriptCode || ''
       }));
 
       const newPlace = {
@@ -3895,7 +4330,7 @@
         name: name,
         place: 'Custom Studio Map',
         author: currentAccount.username,
-        desc: desc || 'Карта создана в Studio 2008',
+        desc: desc || 'Карта создана в Studio 2008 с Lua скриптами и Моделями',
         customParts: serializedParts,
         isCustom: true
       };
